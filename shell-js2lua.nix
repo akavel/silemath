@@ -16,6 +16,7 @@ let
     inherit lrexlib_pcre;
     inherit castl_amalgm;
     LUA_PATH = "${castl_amalgm}/lib/node_modules/castl/lua/?.lua";
+    LUA_CPATH = "${lrexlib_pcre}/lib/lua/5.2/?.so";
     inherit luafmt_amalgm;
     inherit pinecone_2_amalgm;
   };
