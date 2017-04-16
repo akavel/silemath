@@ -12,16 +12,63 @@ local asciimath = assert(loadfile 'asciimath.lua')()
 
 local env = require 'castl.runtime'
 env.document = {
-	createDocumentFragment = function(...) print('hello0!',...) end
+  createDocumentFragment = function(self) 
+    --return setmetatable({}, {__index = DocumentFragment})
+    return env.document:createElementNS()
+  end,
+  createTextNode = function(self, s)
+    return s
+  end,
+  createElementNS = function(self, namespace, tag)
+    return setmetatable({tag = tag}, {__index = Tag})
+  end,
 }
-env.createDocumentFragment = function(...) print('hello1!', ...) end
-env.this.createDocumentFragment = function(...) print('hello2!', ...) end
-_G.createDocumentFragment = function(...) print('hello3!', ...) end
-env._G = env._obj({})
-env._G.createDocumentFragment = function(...) print('hello4!', ...) end
+Tag = {
+  appendChild = function(self, child)
+    if not self.childs then self.childs = {} end
+    self.childs[#self.childs+1] = child
+  end,
+  setAttribute = function(self, name, value)
+    if not self.attrs then self.attrs = {} end
+    self.attrs[name] = value
+  end,
+  marshal = function(self, buf)
+    if not buf then
+      buf = setmetatable({}, {__call = function(self, fmt, ...)
+        self[#self+1] = string.format(fmt, ...)
+      end})
+    end
+    if self.tag then
+      buf('<%s', self.tag)
+      local attrs = {}
+      for k,v in pairs(self.attrs or {}) do
+        attrs[#attrs+1] = string.format(' %s="%s"', k, v)
+      end
+      table.sort(attrs)
+      buf('%s>', table.concat(attrs, ''))
+    end
+    for _, ch in ipairs(self.childs) do
+      if type(ch) == 'string' then
+        buf('%s', ch)
+      else
+        ch:marshal(buf)
+      end
+    end
+    if self.tag then
+      buf('</%s>', self.tag)
+    end
+    return buf
+  end,
+}
+--DocumentFragment = {
+--}
 
+-- AMsymbols
+-- AMnames
+
+asciimath.init()
 local input = "!="
 local expectedOutput = "<mo>≠</mo>"
 local res = asciimath.parseMath(nil, input)
-print(res)
+print(table.concat(res:marshal(), ''))
 print(expectedOutput)

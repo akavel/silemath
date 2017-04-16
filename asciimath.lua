@@ -1817,6 +1817,7 @@ asciimath = _obj({});
         230
     )
     AMnames = _arr({}, 0)
+    asciimath.init = init
     asciimath.newcommand = newcommand
     asciimath.newsymbol = newsymbol
     asciimath.AMprocesssNode = AMprocessNode
