@@ -13,7 +13,6 @@ local asciimath = assert(loadfile 'asciimath.lua')()
 local env = require 'castl.runtime'
 env.document = {
   createDocumentFragment = function(self) 
-    --return setmetatable({}, {__index = DocumentFragment})
     return env.document:createElementNS()
   end,
   createTextNode = function(self, s)
@@ -60,15 +59,12 @@ Tag = {
     return buf
   end,
 }
---DocumentFragment = {
---}
-
--- AMsymbols
--- AMnames
 
 asciimath.init()
 local input = "!="
 local expectedOutput = "<mo>≠</mo>"
 local res = asciimath.parseMath(nil, input)
+while res and res.tag~='mstyle' do res = res.childs[1] end
+res = res.childs[1]
 print(table.concat(res:marshal(), ''))
 print(expectedOutput)
