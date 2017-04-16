@@ -3,7 +3,7 @@
 local _ENV = require("castl.runtime")
 local asciimath
 
-asciimath = _obj({})
+asciimath = _obj({});
 (function(this)
     local AMprocessNode, processNodeR, AMautomathrec, strarr2docFrag, parseMath, AMparseExpr, AMparseIexpr, AMparseSexpr, AMcurrentSymbol, AMpreviousSymbol, AMnestingDepth, AMremoveBrackets, AMgetSymbol, position, AMremoveCharsAndBlanks, define, refreshSymbols, initSymbols, AMnames, compareNames, AMsymbols, AMquote, UNARYUNDEROVER, MATRIX, STRETCHY, LONG, BIG, TEXT, LEFTRIGHT, DEFINITION, UNDEROVER, SPACE, RIGHTBRACKET, LEFTBRACKET, INFIX, BINARY, UNARY, CONST, AMbbb, AMfrk, AMcal, newsymbol, newcommand, createMmlNode, AMcreateElementMathML, AMmathml, createElementXHTML, translate, init, translated, noMathML, isIE, fixphi, AMdocumentId, AMescape1, AMdelimiter1, decimalsign, showasciiformulaonhover, displaystyle, translateASCIIMath, translateOnLoad, alertIfNoMathML, notifyIfNoMathML, automathrecognize, mathfontfamily, mathfontsize, mathcolor
     init = (function(this)
@@ -1827,3 +1827,4 @@ asciimath = _obj({})
 end)(_ENV)
 
 --------------------------------------------------------------------
+return asciimath
