@@ -446,7 +446,9 @@ env.document = {
   createElementNS = function(self, namespace, tag)
     return setmetatable({tag = tag}, {__index = Tag})
   end,
-  createDocumentFragment = function(self) return env.document:createElementNS() end,
+  createDocumentFragment = function(self)
+    return setmetatable({_fragment = true}, {__index = Tag})
+  end,
   createTextNode = function(self, text)
     return setmetatable({text = text}, {__index = function(self, name)
       if name == 'hasChildNodes' then
@@ -455,10 +457,13 @@ env.document = {
         return '#text'
       elseif name == 'nodeValue' then
         return self.text
+      elseif name == '_fragment' then
+        return false
       end
       error(debug.traceback("tried to access string's method: "..name, 2))
     end})
   end,
+  printf = function(_, fmt, ...) print(string.format(fmt, ...)) end,
 }
 Tag = function(self, name)
   if name == 'childNodes' then
@@ -478,8 +483,15 @@ Tag = function(self, name)
   end
   local funcs = {
     appendChild = function(self, child)
+      if child._fragment then
+        for _,ch in ipairs(child.childs) do
+          self:appendChild(ch)
+        end
+        return child
+      end
       if not self.childs then self.childs = {} end
       self.childs[#self.childs+1] = child
+      return child
     end,
     setAttribute = function(self, name, value)
       if not self.attrs then self.attrs = {} end
@@ -531,6 +543,9 @@ Tag = function(self, name)
 end
 
 asciimath.init()
+
+--io.write(asciimath:parseMath 'sqrt(x)':toxml())
+--os.exit(1)
 
 for _, case in ipairs(cases) do
   local ok, err = xpcall(function()
