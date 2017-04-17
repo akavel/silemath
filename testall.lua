@@ -509,23 +509,21 @@ end
 asciimath.init()
 
 for _, case in ipairs(cases) do
-  local res = asciimath:parseMath(case.input)
-  while res.tag~='mstyle' do
+  local ok, err = pcall(function()
+    local res = asciimath:parseMath(case.input)
+    while res.tag~='mstyle' do
+      res = res.childs[1]
+    end
     res = res.childs[1]
-  end
-  res = res.childs[1]
-  res = res:toxml()
-  if res ~= case.output then
-    io.write(string.format('\ncase %s\n want: %s\n have: %s\n', case.input, case.output, res))
-  else
-    io.write('.')
+    res = res:toxml()
+    if res ~= case.output then
+      io.write(string.format('\ncase %s\n want: %s\n have: %s\n', case.input, case.output, res))
+    else
+      io.write('.')
+    end
+  end)
+  if not ok then
+    io.write(string.format('\ncase %s: error %s\n', case.input, err))
   end
 end
 
-local input = "!="
-local expectedOutput = "<mo>≠</mo>"
-local res = asciimath.parseMath(nil, input)
-while res and res.tag~='mstyle' do res = res.childs[1] end
-res = res.childs[1]
-print(res:toxml())
-print(expectedOutput)
