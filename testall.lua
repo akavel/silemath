@@ -493,6 +493,17 @@ Tag = function(self, name)
       self.childs[#self.childs+1] = child
       return child
     end,
+    replaceChild = function(self, new, old)
+      if new._fragment then
+        error("NIY: replaceChild using document-fragment")
+      end
+      for i,ch in ipairs(self.childs or {}) do
+        if ch==old then
+          self.childs[i] = new
+          return old
+        end
+      end
+    end,
     setAttribute = function(self, name, value)
       if not self.attrs then self.attrs = {} end
       self.attrs[name] = value
