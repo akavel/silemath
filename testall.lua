@@ -443,17 +443,30 @@ local asciimath = assert(loadfile 'asciimath.lua')()
 
 local env = require 'castl.runtime'
 env.document = {
-  createTextNode = function(self, text) return text end,
   createElementNS = function(self, namespace, tag)
     return setmetatable({tag = tag}, {__index = Tag})
   end,
   createDocumentFragment = function(self) return env.document:createElementNS() end,
+  createTextNode = function(self, text)
+    return setmetatable({text = text}, {__index = function(self, name)
+      if name == 'hasChildNodes' then
+        return function() return false end
+      elseif name == 'nodeName' then
+        return '#text'
+      elseif name == 'nodeValue' then
+        return self.text
+      end
+      error(debug.traceback("tried to access string's method: "..name, 2))
+    end})
+  end,
 }
 Tag = function(self, name)
   if name == 'childNodes' then
     return setmetatable(self.childs or {}, {__index = function(self, name)
       if name == 'length' then
         return #self
+      elseif type(name)=='number' then
+        return rawget(self, name+1)
       end
     end})
   elseif name == 'nodeName' then
@@ -475,6 +488,17 @@ Tag = function(self, name)
     hasChildNodes = function(self)
       return self.childs and true or false
     end,
+    removeChild = function(self, cut)
+      for i,ch in ipairs(self.childs) do
+        if ch==cut then
+          table.remove(self.childs, i)
+          if #self.childs==0 then
+            self.childs = nil
+          end
+          return cut
+        end
+      end
+    end,
     toxml = function(self, buf0)
       local buf = buf0 or setmetatable({}, {__call = function(self, fmt, ...)
         self[#self+1] = string.format(fmt, ...)
@@ -489,8 +513,8 @@ Tag = function(self, name)
         buf('%s>', table.concat(attrs, ''))
       end
       for _, ch in ipairs(self.childs or {}) do
-        if type(ch) == 'string' then
-          buf('%s', ch)
+        if ch.text then
+          buf('%s', ch.text)
         else
           ch:toxml(buf)
         end
@@ -509,7 +533,7 @@ end
 asciimath.init()
 
 for _, case in ipairs(cases) do
-  local ok, err = pcall(function()
+  local ok, err = xpcall(function()
     local res = asciimath:parseMath(case.input)
     while res.tag~='mstyle' do
       res = res.childs[1]
@@ -521,7 +545,7 @@ for _, case in ipairs(cases) do
     else
       io.write('.')
     end
-  end)
+  end, function(err) return debug.traceback(err, 2) end)
   if not ok then
     io.write(string.format('\ncase %s: error %s\n', case.input, err))
   end
