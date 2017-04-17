@@ -459,6 +459,8 @@ env.document = {
         return self.text
       elseif name == '_fragment' then
         return false
+      elseif name == 'parent' then
+        return nil  -- if non nil, then __index wouldn't even be called
       end
       error(debug.traceback("tried to access string's method: "..name, 2))
     end})
@@ -491,14 +493,15 @@ Tag = function(self, name)
   local funcs = {
     appendChild = function(self, child)
       if child._fragment then
-        for _,ch in ipairs(child.childs) do
-          self:appendChild(ch)
+        while child.childs do
+          self:appendChild(child:removeChild(child.childs[1]))
         end
-        return child
+      else
+        if child.parent then child.parent:removeChild(child) end
+        if not self.childs then self.childs = {} end
+        child.parent = self
+        self.childs[#self.childs+1] = child
       end
-      if not self.childs then self.childs = {} end
-      child.parent = self
-      self.childs[#self.childs+1] = child
       return child
     end,
     replaceChild = function(self, new, old)
@@ -508,6 +511,8 @@ Tag = function(self, name)
       for i,ch in ipairs(self.childs or {}) do
         if ch==old then
           self.childs[i] = new
+          new.parent = self
+          old.parent = nil
           return old
         end
       end
@@ -526,6 +531,7 @@ Tag = function(self, name)
           if #self.childs==0 then
             self.childs = nil
           end
+          cut.parent = nil
           return cut
         end
       end
@@ -577,7 +583,7 @@ end
 
 asciimath.init()
 
---io.write(toxml(asciimath:parseMath '((1),(2))'))
+--io.write(toxml(asciimath:parseMath '[(1,2),(3,4)]'))
 --os.exit(1)
 
 for _, case in ipairs(cases) do
