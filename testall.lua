@@ -467,11 +467,11 @@ env.document = {
 }
 Tag = function(self, name)
   if name == 'childNodes' then
-    return setmetatable(self.childs or {}, {__index = function(self, name)
+    return setmetatable({_childs = self.childs}, {__index = function(self, name)
       if name == 'length' then
-        return #self
+        return #self._childs
       elseif type(name)=='number' then
-        return rawget(self, name+1)
+        return self._childs[name+1]
       end
     end})
   elseif name == 'nodeName' then
@@ -480,6 +480,13 @@ Tag = function(self, name)
     return (self.childs or {})[1]  -- TODO: is this ok?
   elseif name == 'lastChild' then
     return self.childs[#self.childs]  -- TODO: is this ok?
+  elseif name == 'nextSibling' then
+    if not self.parent then error('no parent') end
+    for i,ch in ipairs(self.parent.childs) do
+      if ch==self then
+        return self.parent.childs[i+1]
+      end
+    end
   end
   local funcs = {
     appendChild = function(self, child)
@@ -490,6 +497,7 @@ Tag = function(self, name)
         return child
       end
       if not self.childs then self.childs = {} end
+      child.parent = self
       self.childs[#self.childs+1] = child
       return child
     end,
@@ -521,6 +529,16 @@ Tag = function(self, name)
           return cut
         end
       end
+    end,
+    toxml = function(self)
+      if self._fragment then
+        local t = {}
+        for _,ch in ipairs(self.childs) do
+          t[#t+1] = string.format("< %s >", toxml(ch))
+        end
+        return table.concat(t, '')
+      end
+      return toxml(self)
     end,
   }
   return funcs[name]
@@ -559,7 +577,7 @@ end
 
 asciimath.init()
 
---io.write(asciimath:parseMath '2-3':toxml())
+--io.write(toxml(asciimath:parseMath '((1),(2))'))
 --os.exit(1)
 
 for _, case in ipairs(cases) do
