@@ -86,13 +86,13 @@ asciimath = _obj({});
         refreshSymbols(_ENV)
     end)
     compareNames = (function(this, s1, s2)
-        if (_gt(s1.input, s2.input)) then
+        if (_lt(s1.input, s2.input)) then
             do
-                return 1
+                return -1
             end
         else
             do
-                return -1
+                return 1
             end
         end
     end)
