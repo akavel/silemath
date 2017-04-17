@@ -450,6 +450,13 @@ env.document = {
     return setmetatable({_fragment = true}, {__index = Tag})
   end,
   createTextNode = function(self, text)
+    text = string.gsub(text, '.', {
+      [' '] = '&nbsp;',
+      ['<'] = '&lt;',
+      ['>'] = '&gt;',
+      ['&'] = '&amp;',
+      -- TODO(akavel): '"' and "'" ?
+    })
     return setmetatable({text = text}, {__index = function(self, name)
       if name == 'hasChildNodes' then
         return function() return false end
@@ -471,7 +478,7 @@ Tag = function(self, name)
   if name == 'childNodes' then
     return setmetatable({_childs = self.childs}, {__index = function(self, name)
       if name == 'length' then
-        return #self._childs
+        return self._childs and #self._childs or 0
       elseif type(name)=='number' then
         return self._childs[name+1]
       end
