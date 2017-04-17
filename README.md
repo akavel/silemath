@@ -19,4 +19,4 @@ TODO:
 - [ ] refactor by hand to "normal" Lua code, then drop castl.runtime dependency
   - [ ] or maybe try [pinecone](https://github.com/zekesonxx/pinecone) to boost this,
     now that we have passing tests?
-- [ ] translate regular expressions to LPEG
+- [ ] translate regular expressions to LPEG, then change NOTE text above
