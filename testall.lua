@@ -522,40 +522,44 @@ Tag = function(self, name)
         end
       end
     end,
-    toxml = function(self, buf0)
-      local buf = buf0 or setmetatable({}, {__call = function(self, fmt, ...)
-        self[#self+1] = string.format(fmt, ...)
-      end})
-      if self.tag then
-        buf('<%s', self.tag)
-        local attrs = {}
-        for k,v in pairs(self.attrs or {}) do
-          attrs[#attrs+1] = string.format(' %s="%s"', k, v)
-        end
-        table.sort(attrs)
-        buf('%s>', table.concat(attrs, ''))
-      end
-      for _, ch in ipairs(self.childs or {}) do
-        if ch.text then
-          buf('%s', ch.text)
-        else
-          ch:toxml(buf)
-        end
-      end
-      if self.tag then
-        buf('</%s>', self.tag)
-      end
-      if not buf0 then
-        return table.concat(buf, '')
-      end
-    end,
   }
   return funcs[name]
 end
 
+function toxml(tabl, buf0)
+  local buf = buf0 or setmetatable({}, {__call = function(self, fmt, ...)
+    self[#self+1] = string.format(fmt, ...)
+  end})
+  local childs
+  if tabl.text then
+    buf('%s', tabl.text)
+    return tabl.text
+  elseif tabl.tag then
+    buf('<%s', tabl.tag)
+    local attrs = {}
+    for k,v in pairs(tabl.attrs or {}) do
+      attrs[#attrs+1] = string.format(' %s="%s"', k, v)
+    end
+    table.sort(attrs)
+    buf('%s>', table.concat(attrs, ''))
+    childs = tabl.childs
+  else
+    childs = tabl
+  end
+  for _, ch in ipairs(childs or {}) do
+    toxml(ch, buf)
+  end
+  if tabl.tag then
+    buf('</%s>', tabl.tag)
+  end
+  if not buf0 then
+    return table.concat(buf, '')
+  end
+end
+
 asciimath.init()
 
---io.write(asciimath:parseMath 'sqrt(x)':toxml())
+--io.write(asciimath:parseMath '2-3':toxml())
 --os.exit(1)
 
 for _, case in ipairs(cases) do
@@ -564,10 +568,10 @@ for _, case in ipairs(cases) do
     while res.tag~='mstyle' do
       res = res.childs[1]
     end
-    res = res.childs[1]
-    res = res:toxml()
+    res = toxml(res.childs)
     if res ~= case.output then
-      io.write(string.format('\ncase %s\n want: %s\n have: %s\n', case.input, case.output, res))
+      io.write(string.format('\ncase %s\n want: %s\n have: %s\n',
+        case.input, case.output, res))
     else
       io.write('.')
     end
