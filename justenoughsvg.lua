@@ -1,0 +1,13 @@
+-- TODO: parse SVG emitted by github.com/akavel/svgmath
+-- (see .../testdata/*.out.svg)
+-- TODO: parse simple SVG into a tree of elements
+-- TODO: recursive descent (= top-down walk) through
+-- the tree, processing subsequent nodes, rendering them
+-- to SILE taking into account any transformations from
+-- higher up the tree [i.e. stack of transformations]
+-- TODO: support should be needed only for the following
+-- SVG elements:
+--  path, rect, line, <g translate(...)>, text, circle
+-- TODO: optionally, as intermediate alternative,
+-- maybe render the nodes in "live mode" in ZeroBrane
+-- Studio into some graphics engine?
