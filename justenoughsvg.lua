@@ -18,7 +18,7 @@
 
 -- wrap_getc returns an object with methods: getc, ungetc,
 -- error.
-function wrap_getc(getc)
+local function wrap_getc(getc)
 	return {
 		ungetc = function(self, c)
 			self.c = c
@@ -39,9 +39,9 @@ function wrap_getc(getc)
 end
 
 -- parse_tree returns a tree of objects representing
--- parsed SVG, or raises error. The g should be a result
--- of wrap_getc.
-function parse_tree(g)
+-- parsed SVG, or raises error.
+function parse_tree(getc)
+	local g = wrap_getc(getc)
 	-- opening '<'
 	local c = g:getc()
 	if c ~= '<' then g:error('expected "<", got "'..c..'"') end
@@ -50,6 +50,9 @@ end
 
 local function isalpha(c)
 	return (c >= 'a' and c <= 'z') or (c >= 'A' and c <= 'Z')
+end
+local function isalnum(c)
+	return isalpha(c) or (c >= '0' and c <= '9')
 end
 
 -- parse_element_inside parses SVG element after initial
@@ -131,7 +134,7 @@ function parse_attr(g)
 	local n = {}
 	while true do
 		local c = g:getc()
-		if isalpha(c) or c == '-' then
+		if isalnum(c) or c == '-' or c == ':' then
 			n[#n+1] = c
 		elseif c == '=' then
 			break
@@ -155,3 +158,44 @@ function parse_attr(g)
 	end
 	return n, table.concat(value, '')
 end
+
+function parse_element_end(g)
+	while true do
+		local c = g:getc()
+		if c == '>' then
+			return
+		end
+	end
+end
+
+---- DEMO/TEST ----
+if not ... then
+	local f = assert(io.open('sample/test13.out.svg'))
+	local tree = parse_tree(function()
+		return f:read(1)
+	end)
+	f:close()
+	-- dump the tree
+	local function dump_tree(elem, indent)
+		local w = io.write
+		local indent = indent or ''
+		w(indent)
+		if type(elem)=='string' then
+			w'"' w(elem) w'"\n'
+			return
+		end
+		w'<' w(elem.name)
+		for k,v in pairs(elem.attrs or {}) do
+			w' ' w(k) w'="' w(v) w'"'
+		end
+		w'>\n'
+		for _,child in ipairs(elem.childs or {}) do
+			dump_tree(child, indent..'  ')
+		end
+	end
+	dump_tree(tree)
+	-- for k,v in pairs(tree) do
+	-- 	print(k,v)
+	-- end
+end
+
