@@ -12,9 +12,12 @@
 -- maybe render the nodes in "live mode" in ZeroBrane
 -- Studio into some graphics engine?
 
--- NOTE: this parser is expected to work only on SVGs
--- emitted by svgmath, and as such makes many simplifying
--- assumptions about the input.
+-- NOTE: the parser in this module is expected to work
+-- only on SVGs emitted by svgmath, and as such makes
+-- many simplifying assumptions about the input.
+local svg = {}
+
+local priv = {}
 
 -- wrap_getc returns an object with methods: getc, ungetc,
 -- error.
@@ -39,13 +42,15 @@ local function wrap_getc(getc)
 end
 
 -- parse_tree returns a tree of objects representing
--- parsed SVG, or raises error.
-function parse_tree(getc)
+-- parsed SVG, or raises error. Function getc should
+-- return a single next character from parsed SVG file on
+-- each call.
+function svg.parse_tree(getc)
 	local g = wrap_getc(getc)
 	-- opening '<'
 	local c = g:getc()
 	if c ~= '<' then g:error('expected "<", got "'..c..'"') end
-	return parse_element_inside(g)
+	return priv.parse_element_inside(g)
 end
 
 local function isalpha(c)
@@ -57,7 +62,7 @@ end
 
 -- parse_element_inside parses SVG element after initial
 -- '<' was already consumed.
-function parse_element_inside(g)
+function priv.parse_element_inside(g)
 	local elem = {}
 	-- element name (usually namespace:name)
 	local n = {}
@@ -85,7 +90,7 @@ function parse_element_inside(g)
 			break
 		end
 		if not elem.attrs then elem.attrs = {} end
-		local name, value = parse_attr(g)
+		local name, value = priv.parse_attr(g)
 		elem.attrs[name] = value
 	end
 	-- does the element have children?
@@ -117,7 +122,7 @@ function parse_element_inside(g)
 				-- end of current elem
 				break
 			end
-			local child = parse_element_inside(g)
+			local child = priv.parse_element_inside(g)
 			add_child(child)
 		else
 			-- text node
@@ -125,11 +130,11 @@ function parse_element_inside(g)
 		end
 	end
 	-- TODO: verify elem.name
-	parse_element_end(g)
+	priv.parse_element_end(g)
 	return elem
 end
 
-function parse_attr(g)
+function priv.parse_attr(g)
 	-- attribute name
 	local n = {}
 	while true do
@@ -159,7 +164,7 @@ function parse_attr(g)
 	return n, table.concat(value, '')
 end
 
-function parse_element_end(g)
+function priv.parse_element_end(g)
 	while true do
 		local c = g:getc()
 		if c == '>' then
@@ -171,7 +176,7 @@ end
 ---- DEMO/TEST ----
 if not ... then
 	local f = assert(io.open('sample/test13.out.svg'))
-	local tree = parse_tree(function()
+	local tree = svg.parse_tree(function()
 		return f:read(1)
 	end)
 	f:close()
@@ -198,4 +203,6 @@ if not ... then
 	-- 	print(k,v)
 	-- end
 end
+
+return svg
 
