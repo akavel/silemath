@@ -42,11 +42,17 @@ end
 -- parsed SVG, or raises error. The g should be a result
 -- of wrap_getc.
 function parse_tree(g)
-	local node = {}
 	-- opening '<'
 	local c = g:getc()
 	if c ~= '<' then g:error('expected "<", got "'..c..'"') end
-	-- node name (usually namespace:name)
+	return parse_element_inside(g)
+end
+
+-- parse_element_inside parses SVG element after initial
+-- '<' was already consumed.
+function parse_element_inside(g)
+	local elem = {}
+	-- element name (usually namespace:name)
 	local n = {}
 	while true do
 		local c = g:getc()
@@ -56,14 +62,14 @@ function parse_tree(g)
 			-- namespace - discard
 			n = {}
 		elseif c == ' ' or c == '>' or c == '/' then
-			-- end of node name
+			-- end of element name
 			g:ungetc(c)
 			break
 		else
-			g:error('unexpected character "'..c..'" in node name')
+			g:error('unexpected character "'..c..'" in element name')
 		end
 	end
-	node.name = table.concat(n, '')
+	elem.name = table.concat(n, '')
 	-- optional space-separated attributes
 	while true do
 		local c = g:getc()
@@ -71,9 +77,9 @@ function parse_tree(g)
 			g:ungetc(c)
 			break
 		end
-		if not node.attrs then node.attrs = {} end
+		if not elem.attrs then elem.attrs = {} end
 		local name, value = parse_attr(g)
-		node.attrs[name] = value
+		elem.attrs[name] = value
 	end
 	-- does the element have children?
 	local c = g:getc()
@@ -83,8 +89,36 @@ function parse_tree(g)
 		if c ~= '>' then
 			g:error('expected "/>", got "/'..c..'"')
 		end
-		return node
+		return elem
 	end
 	-- parse children
+	local function add_child(ch)
+		if not elem.childs then elem.childs = {} end
+		local n = #elem.childs
+		if type(ch) == 'string' and type(elem.childs[n]) == 'string' then
+			elem.childs[n] = elem.childs[n] .. ch
+		else
+			elem.childs[n+1] = ch
+		end
+	end
+	while true do
+		local c = g:getc()
+		if c == '<' then
+			-- child elem, or end of current elem?
+			local c = g:getc()
+			if c == '/' then
+				-- end of current elem
+				break
+			end
+			local child = parse_element_inside(g)
+			add_child(child)
+		else
+			-- text node
+			add_child(c)
+		end
+	end
+	-- TODO: verify elem.name
+	parse_element_end(g)
+	return elem
 end
 
