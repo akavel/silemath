@@ -3,6 +3,7 @@
 -- Based on
 -- https://www.w3.org/TR/SVG/coords.html#EstablishingANewUserSpace
 -- and further subchapters.
+local matrix = {}
 
 -- table {s1, k1, k2, s2, t1, t2} represents a matrix:
 --   _        _
@@ -14,7 +15,7 @@
 
 -- mul returns a new table, representing multiplication of
 -- matrices A*B
-function mul(A, B)
+function matrix.mul(A, B)
 	return {
 		A[1]*B[1] + A[3]*B[2],
 		A[2]*B[1] + A[4]*B[2],
@@ -26,18 +27,20 @@ function mul(A, B)
 end
 -- apply transformation matrix to 2D point coordinates
 -- (multiply matrix and vector A*v)
-function apply(A, vx, vy)
+function matrix.apply(A, vx, vy)
 	return A[1]*vx + A[3]*vy + A[5],
 		A[2]*vx + A[4]*vy + A[6]
 end
 
-function identity()
+function matrix.identity()
 	return {1, 0, 0, 1, 0, 0}
 end
-function translate(tx, ty)
+function matrix.translate(tx, ty)
 	return {1, 0, 0, 1, tx, ty}
 end
-function scale(sx, sy)
+function matrix.scale(sx, sy)
 	return {sx, 0, 0, sy, 0, 0}
 end
+
+return matrix
 
