@@ -41,11 +41,18 @@ local function wrap_getc(getc)
 	}
 end
 
--- parse_tree returns a tree of objects representing
--- parsed SVG, or raises error. Function getc should
--- return a single next character from parsed SVG file on
--- each call.
-function svg.parse_tree(getc)
+-- parse returns a tree of objects representing parsed
+-- SVG, or raises error. Function getc should return a
+-- single next character from parsed SVG file on each
+-- call.
+--
+-- Additionally:
+-- * any '-' in attributes are replaced with '_', for
+--   easier processing in Lua
+-- * any 'transform' attributes are replaced from:
+--   transform="func(arg1, arg2)" to a pair of attributes:
+--   func1="arg1" func2="arg2"
+function svg.parse(getc)
 	local g = wrap_getc(getc)
 	-- opening '<'
 	local c = g:getc()
@@ -91,7 +98,7 @@ function priv.parse_element_inside(g)
 		end
 		if not elem.attrs then elem.attrs = {} end
 		local name, value = priv.parse_attr(g)
-		elem.attrs[name] = value
+		priv.simplify_attr(elem.attrs, name, value)
 	end
 	-- does the element have children?
 	local c = g:getc()
@@ -164,6 +171,24 @@ function priv.parse_attr(g)
 	return n, table.concat(value, '')
 end
 
+function priv.simplify_attr(attrs, name, value)
+	if name ~= 'transform' then
+		local name = name:gsub('-', '_')
+		attrs[name] = value
+		return
+	end
+	-- "func(arg1, arg2)"
+	local pattern = '^(%w+)%(([^,]+), ([^%)]+)%)$'
+	local func, arg1, arg2 = value:match(pattern)
+	if not func then
+		attrs[name] = value
+		return
+	end
+	attrs[func..'1'] = arg1
+	attrs[func..'2'] = arg2
+	return
+end
+
 function priv.parse_element_end(g)
 	while true do
 		local c = g:getc()
@@ -176,7 +201,7 @@ end
 ---- DEMO/TEST ----
 if not ... then
 	local f = assert(io.open('sample/test13.out.svg'))
-	local tree = svg.parse_tree(function()
+	local tree = svg.parse(function()
 		return f:read(1)
 	end)
 	f:close()
