@@ -48,6 +48,10 @@ function parse_tree(g)
 	return parse_element_inside(g)
 end
 
+local function isalpha(c)
+	return (c >= 'a' and c <= 'z') or (c >= 'A' and c <= 'Z')
+end
+
 -- parse_element_inside parses SVG element after initial
 -- '<' was already consumed.
 function parse_element_inside(g)
@@ -56,7 +60,7 @@ function parse_element_inside(g)
 	local n = {}
 	while true do
 		local c = g:getc()
-		if c >= 'a' and c <= 'z' then
+		if isalpha(c) then
 			n[#n+1] = c
 		elseif c == ':' then
 			-- namespace - discard
@@ -122,3 +126,32 @@ function parse_element_inside(g)
 	return elem
 end
 
+function parse_attr(g)
+	-- attribute name
+	local n = {}
+	while true do
+		local c = g:getc()
+		if isalpha(c) or c == '-' then
+			n[#n+1] = c
+		elseif c == '=' then
+			break
+		else
+			g:error('unexpected character "'..c..'" in attribute name')
+		end
+	end
+	n = table.concat(n, '')
+	-- attribute value
+	local c = g:getc()
+	if c ~= '"' then
+		g:error("expected '=\"' in attribute value, got '="..c.."'")
+	end
+	local value = {}
+	while true do
+		local c = g:getc()
+		if c == '"' then
+			break
+		end
+		value[#value+1] = c
+	end
+	return n, table.concat(value, '')
+end
