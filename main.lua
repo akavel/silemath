@@ -43,10 +43,40 @@ local function load_fonts(svg, fonts)
 end
 local fonts = load_fonts(mathml.childs)
 
+local function render(svg, fonts, matrices)
+  local matrices = matrices or {mm.identity()}
+  -- TODO: process viewBox attribute
+  local m0 = matrices[#matrices]
+  local m
+  if svg.translate1 then
+    m = mm.mul(mm.translate(svg.translate1, svg.translate2), m0)
+  elseif svg.scale1 then
+    m = mm.mul(mm.scale(svg.scale1, svg.scale2), m0)
+  end
+  if m then
+    matrices[#matrices+1] = m
+    m0 = m
+  end
+  -- maybe render
+  if svg.name == 'text' then
+    love.graphics.setFont(fonts[svg.attrs.font_family .. ' ' .. svg.attrs.font_size])
+    love.graphics.print(svg.childs[1], svg.attrs.x, svg.attrs.y, 0, m0[1], m0[4], m0[5], m0[6])
+  else
+    for _,el in ipairs(svg.childs or {}) do
+      render(el, fonts, matrices)
+    end
+  end
+  -- pop transformation matrix if pushed
+  if m then
+    matrices[#matrices] = nil
+  end
+end
+
 function love.draw()
-  
   
   love.graphics.setColor(20,255,0,255)
   love.graphics.print("Hello", 100, 100)
+  
+  render(mathml, fonts)
 end
 
