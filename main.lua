@@ -48,10 +48,10 @@ local function render(svg, fonts, matrices)
   -- TODO: process viewBox attribute
   local m0 = matrices[#matrices]
   local m
-  if svg.translate1 then
-    m = mm.mul(mm.translate(svg.translate1, svg.translate2), m0)
-  elseif svg.scale1 then
-    m = mm.mul(mm.scale(svg.scale1, svg.scale2), m0)
+  if svg.attrs and svg.attrs.translate1 then
+    m = mm.mul(mm.translate(svg.attrs.translate1, svg.attrs.translate2), m0)
+  elseif svg.attrs and svg.attrs.scale1 then
+    m = mm.mul(mm.scale(svg.attrs.scale1, svg.attrs.scale2), m0)
   end
   if m then
     matrices[#matrices+1] = m
