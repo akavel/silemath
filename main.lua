@@ -61,16 +61,19 @@ local function render(svg, fonts, matrices)
   end
   -- maybe render
   if svg.name == 'text' then
-    love.graphics.setFont(fonts[svg.attrs.font_family .. ' ' .. (svg.attrs.font_style or 'regular') .. ' ' .. svg.attrs.font_size])
---    love.graphics.print(svg.childs[1], svg.attrs.x, svg.attrs.y, 0, 1, 1, m0[5], m0[6])
---    love.graphics.print(svg.childs[1], m0[1]*svg.attrs.x, m0[4]*svg.attrs.y, 0, 1, 1, m0[5], m0[6])
---    love.graphics.print(svg.childs[1], svg.attrs.x, svg.attrs.y, 0, m0[1], m0[4], m0[5], m0[6])
+    local font = fonts[svg.attrs.font_family .. ' ' .. (svg.attrs.font_style or 'regular') .. ' ' .. svg.attrs.font_size]
+    love.graphics.setFont(font)
+    local dy = -font:getAscent()
     local x, y = mm.apply(m0, svg.attrs.x, svg.attrs.y)
-    if svg.attrs and svg.attrs.text_anchor == 'middle' then
-      y = y - svg.attrs.font_size/2
-    end
-    love.graphics.print(svg.childs[1], x, y, 0, m0[1], m0[4], 0, 0)
-    print(('  '):rep(#matrices) .. '"' .. svg.childs[1] .. '" (' .. svg.attrs.x .. ', ' .. svg.attrs.y .. ') = ' .. x .. ', ' .. y)
+    local text = svg.childs[1]
+    local w = font:getWidth(text) * m0[1]
+    love.graphics.print(text, x-w/2, y+dy, 0, m0[1], m0[4], 0, 0)
+--    print(('  '):rep(#matrices) .. '"' .. text .. '" (' .. svg.attrs.x .. ', ' .. svg.attrs.y .. ') = ' .. x .. ', ' .. y)
+--    love.graphics.rectangle('line', x, y+dy, w, svg.attrs.font_size)
+  elseif svg.name == 'line' then
+    local x1, y1 = mm.apply(m0, svg.attrs.x1, svg.attrs.y1)
+    local x2, y2 = mm.apply(m0, svg.attrs.x2, svg.attrs.y2)
+    love.graphics.line(x1, y1, x2, y2)
   else
     for _,el in ipairs(svg.childs or {}) do
       render(el, fonts, matrices)
@@ -87,6 +90,7 @@ function love.draw()
   
   love.graphics.setColor(20,255,0,255)
   love.graphics.print("Hello", 100, 100)
+  love.graphics.print("ORIGIN", 0,0)
   
   render(mathml, fonts)
   i = i + 1
