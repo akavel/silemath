@@ -14,7 +14,8 @@ print('hello')
 -- load fonts
 -- (https://superuser.com/a/1072309/12184 - HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts)
 font_files = {
-  ["DejaVu Serif"] = "DejaVuSerif.ttf",
+  ["DejaVu Serif regular"] = "DejaVuSerif.ttf",
+  ["DejaVu Serif italic"] = "DejaVuSerif-Italic.ttf",
 }
 --font_dir = "C:/windows/fonts"
 -- TODO: is the font size in SVG specified in pixels, or something else?
@@ -26,12 +27,13 @@ local function load_fonts(svg, fonts)
       --print't'
       if elem.name == 'text' then
         local family = elem.attrs.font_family
+        local style = elem.attrs.font_style or 'regular'
         local size = elem.attrs.font_size
-        local key = family .. ' ' .. size
+        local key = family .. ' ' .. style .. ' ' .. size
         if not fonts[key] then
           print(key)
           fonts[key] = love.graphics.newFont(
-            font_files[family],
+            font_files[family .. ' ' .. style],
             0 + size)
         end
       else
@@ -59,7 +61,7 @@ local function render(svg, fonts, matrices)
   end
   -- maybe render
   if svg.name == 'text' then
-    love.graphics.setFont(fonts[svg.attrs.font_family .. ' ' .. svg.attrs.font_size])
+    love.graphics.setFont(fonts[svg.attrs.font_family .. ' ' .. (svg.attrs.font_style or 'regular') .. ' ' .. svg.attrs.font_size])
 --    love.graphics.print(svg.childs[1], svg.attrs.x, svg.attrs.y, 0, 1, 1, m0[5], m0[6])
 --    love.graphics.print(svg.childs[1], m0[1]*svg.attrs.x, m0[4]*svg.attrs.y, 0, 1, 1, m0[5], m0[6])
 --    love.graphics.print(svg.childs[1], svg.attrs.x, svg.attrs.y, 0, m0[1], m0[4], m0[5], m0[6])
