@@ -1,0 +1,15 @@
+\begin{document}
+Sample inital text
+
+\begin{script}
+
+local i = 6
+SILE.typesetter:typeset(i..' x '.. i ..' = '..i*i..'. ')
+SILE.typesetter:leaveHmode()
+SILE.call('smallskip')
+
+\end{script}
+
+Sample final text
+
+\end{document}
