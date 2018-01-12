@@ -20,7 +20,8 @@ local buf = 'A'
 -- below 2 lines load raw font from cache (or disk if not cached); first
 -- occurrence results in 'Resolved font ...' message
 local fontoptions = SILE.font.loadDefaults{
-	family='DejaVu Serif'
+	family='DejaVu Serif',
+	style='italic',
 }
 local font = SILE.font.cache(fontoptions, SILE.shaper.getFace)
 
