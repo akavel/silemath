@@ -44,9 +44,11 @@ SILE.typesetter:pushHbox{
 	height=30, width=30, depth=0,
 	outputYourself = function(self, typesetter)
 		value.items[1].width = 0
+		value.items[1].x_offset = 10
 		SILE.outputters.libtexpdf.outputHbox(value)
 		value.items = shape2
 		value.items[1].width = 0
+		value.items[1].y_offset = 5
 		SILE.outputters.libtexpdf.outputHbox(value)
 		-- SILE.outputter.outputHbox(value)
 	end,
