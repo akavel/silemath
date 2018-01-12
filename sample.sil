@@ -27,6 +27,8 @@ local _ = {}
 for k,v in pairs(shape[1]) do _[#_+1] = ('%s:%s'):format(k,v) end
 SU.debug('silemath', 'shapeToken("A")[1] is: ' ..table.concat(_,', '))
 
+local shape2 = SILE.shaper:shapeToken("B", fontoptions)
+
 -- NOTE: it looks I may just want to use SILE.shaper:shapeToken instead of above 2 lines & more
 -- (see core/harfbuzz-shaper.lua)
 -- (*) or just above 1 line; options are maybe still required?
@@ -41,6 +43,10 @@ local value = {complex=true, glyphString='dummy', items=shape}
 SILE.typesetter:pushHbox{
 	height=30, width=30, depth=0,
 	outputYourself = function(self, typesetter)
+		value.items[1].width = 0
+		SILE.outputters.libtexpdf.outputHbox(value)
+		value.items = shape2
+		value.items[1].width = 0
 		SILE.outputters.libtexpdf.outputHbox(value)
 		-- SILE.outputter.outputHbox(value)
 	end,
