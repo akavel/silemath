@@ -1,5 +1,7 @@
 \begin{document}
-Sample inital text
+Sample inital text.
+
+Another line before.
 
 \begin{script}
 ---------------------------------------
@@ -20,6 +22,30 @@ local buf = 'A'
 local fontoptions = SILE.font.loadDefaults({})
 local font = SILE.font.cache(fontoptions, SILE.shaper.getFace)
 
+local shape = SILE.shaper:shapeToken("A", fontoptions)
+local _ = {}
+for k,v in pairs(shape[1]) do _[#_+1] = ('%s:%s'):format(k,v) end
+SU.debug('silemath', 'shapeToken("A")[1] is: ' ..table.concat(_,', '))
+
+-- NOTE: it looks I may just want to use SILE.shaper:shapeToken instead of above 2 lines & more
+-- (see core/harfbuzz-shaper.lua)
+-- (*) or just above 1 line; options are maybe still required?
+-- TODO: but what is the output of this func? is it usable for me?
+--   for pdf.setstring with high probability (but not 100% sure)?
+
+--local shape[1].width = 
+local value = {complex=true, glyphString='dummy', items=shape}
+-- TODO: [LATER] use 'current outputter' (SILE.outputter.outputHbox) instead of explicit libtexpdf?
+-- below line doesn't work, with error: 'libtexpdf:fatal: Invalid font: 0 (0)'
+-- SILE.outputters.libtexpdf.outputHbox(value)
+SILE.typesetter:pushHbox{
+	height=30, width=30, depth=0,
+	outputYourself = function(self, typesetter)
+		SILE.outputters.libtexpdf.outputHbox(value)
+		-- SILE.outputter.outputHbox(value)
+	end,
+}
+
 --SU.debug('silemath', 'font from cache is: ' .. font)
 --SU.warn('silemath', 'font from cache is: ' .. font)
 --local f = pdf.loadfont(font)
@@ -36,6 +62,6 @@ SILE.call('smallskip')
 ---------------------------------------
 \end{script}
 
-Sample final text
+Sample final text.
 
 \end{document}
