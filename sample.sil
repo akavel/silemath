@@ -90,6 +90,15 @@ local function render(svg, matrices)
     -- local x1, y1 = mm.apply(m0, svg.attrs.x1, svg.attrs.y1)
     -- local x2, y2 = mm.apply(m0, svg.attrs.x2, svg.attrs.y2)
     -- love.graphics.line(x1, y1, x2, y2)
+
+    -- FIXME: somehow use svg.attrs.stroke_width when drawing the line
+    local x1, y1 = svg.attrs.x1, svg.attrs.y1
+    local x2, y2 = svg.attrs.x2, svg.attrs.y2
+    pdf.add_content("q")
+    pdf.add_content(x1 .. ' ' .. y1 .. ' m')
+    pdf.add_content(x2 .. ' ' .. y2 .. ' l')
+    pdf.add_content("S")
+    pdf.add_content("Q")
   else
     for _,el in ipairs(svg.childs or {}) do
       render(el, matrices)
