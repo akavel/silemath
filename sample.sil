@@ -7,12 +7,21 @@ Another line before.
 ---------------------------------------
 ---------------------------------------
 
--- below loads pdf emitting/tools library
-local pdf = require 'justenoughlibtexpdf'
-
 -- below enables SU.debug('silemath', 'some text') to print something, per sile.sil
 SILE.debugFlags.silemath = 1
 
+local svg = require 'justenoughsvg'
+local mm = require 'justenoughmatrix'
+
+-- load MathML SVG image
+local f = assert(io.open('../silemath/sample/test13.out.svg'))
+local mathml = svg.parse(function() return f:read(1) end)
+f:close()
+
+-- for k,v in pairs(mathml) do SU.debug('silemath', ('%s:%s'):format(k,v)) end
+
+-- below loads pdf emitting/tools library
+local pdf = require 'justenoughlibtexpdf'
 --pdf.add_content('q')
 --local x, y = pdf:cursor()
 
@@ -35,12 +44,71 @@ local function renderGlyph(glyph, x, y, fontoptions)
 	}
 end
 
+local function render(svg, matrices)
+  -- local matrices = matrices or {mm.translate(20,40)}
+  -- TODO: process viewBox attribute
+  -- local m0 = matrices[#matrices]
+  -- local m
+  local m = 0
+  if svg.attrs and svg.attrs.translate1 then
+    pdf:gsave()
+    m = m+1
+    pdf.setmatrix(1,0,0,1, svg.attrs.translate1, svg.attrs.translate2)
+    -- m = mm.mul(m0, mm.translate(svg.attrs.translate1, svg.attrs.translate2))
+  elseif svg.attrs and svg.attrs.scale1 then
+    pdf:gsave()
+    m = m+1
+    pdf.setmatrix(svg.attrs.scale1, 0, 0, svg.attrs.scale2, 0, 0)
+    -- m = mm.mul(m0, mm.scale(svg.attrs.scale1, svg.attrs.scale2))
+  end
+  -- if m then
+  --   matrices[#matrices+1] = m
+  --   m0 = m
+  -- end
+  -- maybe render
+  if svg.name == 'text' then
+    -- local font = fonts[svg.attrs.font_family .. ' ' .. (svg.attrs.font_style or 'regular') .. ' ' .. svg.attrs.font_size]
+    -- love.graphics.setFont(font)
+    -- local dy = -font:getAscent()
+    -- local x, y = mm.apply(m0, svg.attrs.x, svg.attrs.y)
+    local text = svg.childs[1]
+    -- local w = font:getWidth(text) * m0[1]
+    renderGlyph(text, svg.attrs.x, svg.attrs.y, {
+      family = svg.attrs.font_family,
+      style = svg.attrs.font_style or '',
+      size = svg.attrs.font_size,
+    })
+    -- love.graphics.print(text, x-w/2, y+dy, 0, m0[1], m0[4], 0, 0)
+--    print(('  '):rep(#matrices) .. '"' .. text .. '" (' .. svg.attrs.x .. ', ' .. svg.attrs.y .. ') = ' .. x .. ', ' .. y)
+--    love.graphics.rectangle('line', x, y+dy, w, svg.attrs.font_size)
+  elseif svg.name == 'line' then
+    -- local x1, y1 = mm.apply(m0, svg.attrs.x1, svg.attrs.y1)
+    -- local x2, y2 = mm.apply(m0, svg.attrs.x2, svg.attrs.y2)
+    -- love.graphics.line(x1, y1, x2, y2)
+  else
+    for _,el in ipairs(svg.childs or {}) do
+      render(el, matrices)
+    end
+  end
+  -- pop transformation matrix if pushed
+  -- if m then
+  --   matrices[#matrices] = nil
+  -- end
+  while m>0 do
+    m = m-1
+    pdf:grestore()
+  end
+end
+
+
 SILE.typesetter:pushHbox{
+	-- TODO: process viewBox attribute from SVG (or width & height attributes) to build hbox size
 	height=30, width=30, depth=0,
 	outputYourself = function(self, typesetter)
-		renderGlyph('A', 20, 0, {family='DejaVu Serif', style='italic', size='15'})
-		renderGlyph('B', 0, 5, {family='DejaVu Serif', style='', size='10.650000'})
-		renderGlyph('∂', 30, -5, {family='DejaVu Serif', style='', size='36.221191'})
+		-- renderGlyph('A', 20, 0, {family='DejaVu Serif', style='italic', size='15'})
+		-- renderGlyph('B', 0, 5, {family='DejaVu Serif', style='', size='10.650000'})
+		-- renderGlyph('∂', 30, -5, {family='DejaVu Serif', style='', size='36.221191'})
+    render(mathml)
 	end,
 }
 
