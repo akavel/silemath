@@ -15,55 +15,34 @@ SILE.debugFlags.silemath = 1
 
 --pdf.add_content('q')
 --local x, y = pdf:cursor()
-local buf = 'A'
 
--- below 2 lines load raw font from cache (or disk if not cached); first
--- occurrence results in 'Resolved font ...' message
-local fontoptions = SILE.font.loadDefaults{
-	family='DejaVu Serif',
-	style='italic',
-}
-local font = SILE.font.cache(fontoptions, SILE.shaper.getFace)
+local function renderGlyph(glyph, x, y, fontoptions)
+	-- below 2 lines load raw font from cache (or disk if not cached); first
+	-- occurrence results in 'Resolved font ...' message
+	local fontoptions = SILE.font.loadDefaults(fontoptions)
+	-- TODO: [LATER] use 'current outputter' (SILE.outputter.outputHbox) instead of explicit libtexpdf?
+	SILE.outputters.libtexpdf.setFont(fontoptions)
+	-- FIXME: below block feels overcomplicated and probably against the flow; can it be simplified?
+	local shape = SILE.shaper:shapeToken(glyph, fontoptions)
+	shape[1].width = 0
+	shape[1].x_offset = x
+	shape[1].y_offset = y
+	-- FIXME: below 'dummy' triggers correct branch in libtexpdf-output's outputHbox
+	SILE.outputters.libtexpdf.outputHbox{
+		complex=true,
+		glyphString='dummy',
+		items=shape
+	}
+end
 
-local shape = SILE.shaper:shapeToken("A", fontoptions)
-local _ = {}
-for k,v in pairs(shape[1]) do _[#_+1] = ('%s:%s'):format(k,v) end
-SU.debug('silemath', 'shapeToken("A")[1] is: ' ..table.concat(_,', '))
-
-local shape2 = SILE.shaper:shapeToken("B", fontoptions)
-
--- NOTE: it looks I may just want to use SILE.shaper:shapeToken instead of above 2 lines & more
--- (see core/harfbuzz-shaper.lua)
--- (*) or just above 1 line; options are maybe still required?
--- TODO: but what is the output of this func? is it usable for me?
---   for pdf.setstring with high probability (but not 100% sure)?
-
---local shape[1].width = 
-local value = {complex=true, glyphString='dummy', items=shape}
--- TODO: [LATER] use 'current outputter' (SILE.outputter.outputHbox) instead of explicit libtexpdf?
--- below line doesn't work, with error: 'libtexpdf:fatal: Invalid font: 0 (0)'
--- SILE.outputters.libtexpdf.outputHbox(value)
 SILE.typesetter:pushHbox{
 	height=30, width=30, depth=0,
 	outputYourself = function(self, typesetter)
-		SILE.outputters.libtexpdf.setFont(fontoptions)
-		value.items[1].width = 0
-		value.items[1].x_offset = 10
-		SILE.outputters.libtexpdf.outputHbox(value)
-		value.items = shape2
-		value.items[1].width = 0
-		value.items[1].y_offset = 5
-		SILE.outputters.libtexpdf.outputHbox(value)
-		-- SILE.outputter.outputHbox(value)
+		renderGlyph('A', 20, 0, {family='DejaVu Serif', style='italic', size='15'})
+		renderGlyph('B', 0, 5, {family='DejaVu Serif', style='', size='10.650000'})
+		renderGlyph('∂', 30, -5, {family='DejaVu Serif', style='', size='36.221191'})
 	end,
 }
-
---SU.debug('silemath', 'font from cache is: ' .. font)
---SU.warn('silemath', 'font from cache is: ' .. font)
---local f = pdf.loadfont(font)
---if f< 0 then SU.error("Font loading error for "..options) end
---font = f
---pdf.setstring(100, 100, buf, string.len(buf), font, 0)
 
 local i = 6
 SILE.typesetter:typeset(i..' x '.. i ..' = '..i*i..'. ')
