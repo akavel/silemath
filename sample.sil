@@ -26,22 +26,22 @@ local pdf = require 'justenoughlibtexpdf'
 --local x, y = pdf:cursor()
 
 local function renderGlyph(glyph, x, y, fontoptions)
-	-- below 2 lines load raw font from cache (or disk if not cached); first
-	-- occurrence results in 'Resolved font ...' message
-	local fontoptions = SILE.font.loadDefaults(fontoptions)
-	-- TODO: [LATER] use 'current outputter' (SILE.outputter.outputHbox) instead of explicit libtexpdf?
-	SILE.outputters.libtexpdf.setFont(fontoptions)
-	-- FIXME: below block feels overcomplicated and probably against the flow; can it be simplified?
-	local shape = SILE.shaper:shapeToken(glyph, fontoptions)
-	shape[1].width = 0
-	shape[1].x_offset = x
-	shape[1].y_offset = y
-	-- FIXME: below 'dummy' triggers correct branch in libtexpdf-output's outputHbox
-	SILE.outputters.libtexpdf.outputHbox{
-		complex=true,
-		glyphString='dummy',
-		items=shape
-	}
+  -- below 2 lines load raw font from cache (or disk if not cached); first
+  -- occurrence results in 'Resolved font ...' message
+  local fontoptions = SILE.font.loadDefaults(fontoptions)
+  -- TODO: [LATER] use 'current outputter' (SILE.outputter.outputHbox) instead of explicit libtexpdf?
+  SILE.outputters.libtexpdf.setFont(fontoptions)
+  -- FIXME: below block feels overcomplicated and probably against the flow; can it be simplified?
+  local shape = SILE.shaper:shapeToken(glyph, fontoptions)
+  shape[1].width = 0
+  shape[1].x_offset = x
+  shape[1].y_offset = y
+  -- FIXME: below 'dummy' triggers correct branch in libtexpdf-output's outputHbox
+  SILE.outputters.libtexpdf.outputHbox{
+    complex=true,
+    glyphString='dummy',
+    items=shape
+  }
 end
 
 local function render(svg, matrices)
@@ -116,12 +116,12 @@ end
 
 
 SILE.typesetter:pushHbox{
-	-- TODO: process viewBox attribute from SVG (or width & height attributes) to build hbox size
-	height=30, width=30, depth=0,
-	outputYourself = function(self, typesetter)
-		-- renderGlyph('A', 20, 0, {family='DejaVu Serif', style='italic', size='15'})
-		-- renderGlyph('B', 0, 5, {family='DejaVu Serif', style='', size='10.650000'})
-		-- renderGlyph('∂', 30, -5, {family='DejaVu Serif', style='', size='36.221191'})
+  -- TODO: process viewBox attribute from SVG (or width & height attributes) to build hbox size
+  height=30, width=30, depth=0,
+  outputYourself = function(self, typesetter)
+    -- renderGlyph('A', 20, 0, {family='DejaVu Serif', style='italic', size='15'})
+    -- renderGlyph('B', 0, 5, {family='DejaVu Serif', style='', size='10.650000'})
+    -- renderGlyph('∂', 30, -5, {family='DejaVu Serif', style='', size='36.221191'})
     local oldx, oldy = SILE.outputters.libtexpdf.cursor()
     SILE.outputters.libtexpdf.moveTo(0,0)
     pdf:gsave()
@@ -130,7 +130,7 @@ SILE.typesetter:pushHbox{
     render(mathml)
     pdf:grestore()
     SILE.outputters.libtexpdf.moveTo(oldx, oldy)
-	end,
+  end,
 }
 
 local i = 6
