@@ -74,6 +74,7 @@ local function render(svg, matrices)
     local text = svg.childs[1]
     -- local w = font:getWidth(text) * m0[1]
     pdf:gsave()
+    -- FIXME: glyph should be centered horizontally at svg.attrs.x
     pdf.setmatrix(1,0,0,1, svg.attrs.x, -svg.attrs.y)
     -- renderGlyph(text, svg.attrs.x, -svg.attrs.y, {
     renderGlyph(text, 0, 0, {
