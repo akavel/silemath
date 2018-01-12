@@ -2,12 +2,38 @@
 Sample inital text
 
 \begin{script}
+---------------------------------------
+---------------------------------------
+
+-- below loads pdf emitting/tools library
+local pdf = require 'justenoughlibtexpdf'
+
+-- below enables SU.debug('silemath', 'some text') to print something, per sile.sil
+SILE.debugFlags.silemath = 1
+
+--pdf.add_content('q')
+--local x, y = pdf:cursor()
+local buf = 'A'
+
+-- below 2 lines load raw font from cache (or disk if not cached); first
+-- occurrence results in 'Resolved font ...' message
+local fontoptions = SILE.font.loadDefaults({})
+local font = SILE.font.cache(fontoptions, SILE.shaper.getFace)
+
+--SU.debug('silemath', 'font from cache is: ' .. font)
+--SU.warn('silemath', 'font from cache is: ' .. font)
+--local f = pdf.loadfont(font)
+--if f< 0 then SU.error("Font loading error for "..options) end
+--font = f
+--pdf.setstring(100, 100, buf, string.len(buf), font, 0)
 
 local i = 6
 SILE.typesetter:typeset(i..' x '.. i ..' = '..i*i..'. ')
 SILE.typesetter:leaveHmode()
 SILE.call('smallskip')
 
+---------------------------------------
+---------------------------------------
 \end{script}
 
 Sample final text
