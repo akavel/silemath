@@ -19,7 +19,9 @@ local buf = 'A'
 
 -- below 2 lines load raw font from cache (or disk if not cached); first
 -- occurrence results in 'Resolved font ...' message
-local fontoptions = SILE.font.loadDefaults({})
+local fontoptions = SILE.font.loadDefaults{
+	family='DejaVu Serif'
+}
 local font = SILE.font.cache(fontoptions, SILE.shaper.getFace)
 
 local shape = SILE.shaper:shapeToken("A", fontoptions)
@@ -43,6 +45,7 @@ local value = {complex=true, glyphString='dummy', items=shape}
 SILE.typesetter:pushHbox{
 	height=30, width=30, depth=0,
 	outputYourself = function(self, typesetter)
+		SILE.outputters.libtexpdf.setFont(fontoptions)
 		value.items[1].width = 0
 		value.items[1].x_offset = 10
 		SILE.outputters.libtexpdf.outputHbox(value)
