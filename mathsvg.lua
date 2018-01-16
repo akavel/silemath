@@ -2,6 +2,7 @@
 -- below enables SU.debug('silemath', 'some text') to print something, per sile.sil
 SILE.debugFlags.silemath = 1
 
+local asciimath = require 'asciimath.asciimath'
 local svg = require 'justenoughsvg'
 local pdf = require 'justenoughlibtexpdf'
 
