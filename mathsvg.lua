@@ -89,6 +89,7 @@ SILE.registerCommand("mathsvg", function(options, content)
       render(mathml)
       pdf:grestore()
       SILE.outputters.libtexpdf.moveTo(oldx, oldy)
+      -- TODO: advance the pdf cursor as necessary
     end,
   }
 end, "Render a SVG of a math equation that was produced by svgmath")
