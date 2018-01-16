@@ -1,16 +1,8 @@
-    -- SILE.registerCommand("font", function(options, content)
 
 -- below enables SU.debug('silemath', 'some text') to print something, per sile.sil
 SILE.debugFlags.silemath = 1
 
 local svg = require 'justenoughsvg'
-
--- load MathML SVG image
-local f = assert(io.open('../silemath/sample/test13.out.svg'))
-local mathml = svg.parse(function() return f:read(1) end)
-f:close()
-
--- below loads pdf emitting/tools library
 local pdf = require 'justenoughlibtexpdf'
 
 local function renderGlyph(glyph, x, y, fontoptions)
@@ -80,24 +72,25 @@ local function render(svg, matrices)
   end
 end
 
+SILE.registerCommand("mathsvg", function(options, content)
+  local fn = SU.required(options, "src", "filename")
+  local f = assert(io.open(fn))
+  local mathml = svg.parse(function() return f:read(1) end)
+  f:close()
 
-SILE.typesetter:pushHbox{
-  -- TODO: process viewBox attribute from SVG (or width & height attributes) to build hbox size
-  height=30, width=30, depth=0,
-  outputYourself = function(self, typesetter)
-    local oldx, oldy = SILE.outputters.libtexpdf.cursor()
-    SILE.outputters.libtexpdf.moveTo(0,0)
-    pdf:gsave()
-    pdf.setmatrix(1,0,0,1, oldx, -SILE.documentState.paperSize[2] + oldy)
-    render(mathml)
-    pdf:grestore()
-    SILE.outputters.libtexpdf.moveTo(oldx, oldy)
-  end,
-}
-
-local i = 7
-SILE.typesetter:typeset(i..' x '.. i ..' = '..i*i..'. ')
-SILE.typesetter:leaveHmode()
-SILE.call('smallskip')
+  SILE.typesetter:pushHbox{
+    -- TODO: process viewBox attribute from SVG (or width & height attributes) to build hbox size
+    height=30, width=30, depth=0,
+    outputYourself = function(self, typesetter)
+      local oldx, oldy = SILE.outputters.libtexpdf.cursor()
+      SILE.outputters.libtexpdf.moveTo(0,0)
+      pdf:gsave()
+      pdf.setmatrix(1,0,0,1, oldx, -SILE.documentState.paperSize[2] + oldy)
+      render(mathml)
+      pdf:grestore()
+      SILE.outputters.libtexpdf.moveTo(oldx, oldy)
+    end,
+  }
+end, "Render a SVG of a math equation that was produced by svgmath")
 
 

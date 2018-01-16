@@ -5,6 +5,9 @@ Another line before.
 
 \script[src=mathsvg]
 
+\mathsvg[src=../silemath/sample/test13.out.svg]
+
 Sample final text.
+\mathsvg[src=../silemath/sample/test13.out.svg]
 
 \end{document}
