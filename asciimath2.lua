@@ -1,0 +1,366 @@
+--[[
+asciimath2.lua
+==============
+This file contains Lua functions to convert ASCII math notation and
+(some) LaTeX to Presentation MathML (should work with Firefox and other
+browsers that can render MathML).
+
+Version 2.2 Mar 3, 2014. [cut by akavel - Mateusz Czaplinski, 2017]
+Latest version at https://github.com/mathjax/asciimathml
+If you use it on a webpage, please send the URL to jipsen@chapman.edu
+
+Copyright (c) 2014 Peter Jipsen and other ASCIIMathML.js contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+--]]
+local asciimath = {}
+
+local mathcolor = "blue";        -- change it to "" (to inherit) or another color
+local mathfontsize = "1em";      -- change to e.g. 1.2em for larger math
+local mathfontfamily = "serif";  -- change to "" to inherit (works in IE)
+                                 -- or another family (e.g. "arial")
+local automathrecognize = false; -- writing "amath" on page makes this true
+--var checkForMathML = true;     -- check if browser can display MathML
+local notifyIfNoMathML = true;   -- display note at top if no MathML capability
+local alertIfNoMathML = false;   -- show alert box if no MathML capability
+local translateOnLoad = true;    -- set to false to do call translators from js 
+local translateASCIIMath = true; -- false to preserve `..`
+local displaystyle = true;       -- puts limits above and below large operators
+local showasciiformulaonhover = true; -- helps students learn ASCIIMath
+local decimalsign = ".";         -- change to "," if you like, beware of `(1,2)`!
+local AMdelimiter1, AMescape1 = "`", "\\\\`"; -- can use other characters
+local AMdocumentId = "wikitext"  -- PmWiki element containing math (default=body)
+local fixphi = true;             --false to return to legacy phi/varphi mapping
+
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+local isIE = false;
+local noMathML, translated = false, false;
+
+function asciimath.init()
+  -- var msg, warnings = new Array()
+  if not noMathML then initSymbols() end
+  return true
+end
+
+local function translate(spanclassAM)
+  error 'NIY'
+end
+
+local function createElementXHTML(t)
+  return document.createElementNS("http://www.w3.org/1999/xhtml",t)
+end
+
+local AMmathml = "http://www.w3.org/1998/Math/MathML"
+
+local function AMcreateElementMathML(t)
+  return document.createElementNS(AMmathml,t)
+end
+
+local function createMmlNode(t,frag)
+  local node;
+  node = document.createElementNS(AMmathml,t)
+  if frag then node.appendChild(frag) end
+  return node
+end
+
+local function newcommand(oldstr,newstr)
+  AMsymbols[#AMsymbols+1] = {input=oldstr, tag="mo", output=newstr, tex=null, ttype=DEFINITION}
+  refreshSymbols()
+end
+
+local function newsymbol(symbolobj)
+  AMsymbols[#AMsymbols+1] = symbolobj;
+  refreshSymbols()
+end
+
+-- character lists for Mozilla/Netscape fonts
+local AMcal = {[0] = "\240\157\146\156", "\226\132\172", "\240\157\146\158", "\240\157\146\159", "\226\132\176", "\226\132\177", "\240\157\146\162", "\226\132\139", "\226\132\144", "\240\157\146\165", "\240\157\146\166", "\226\132\146", "\226\132\179", "\240\157\146\169", "\240\157\146\170", "\240\157\146\171", "\240\157\146\172", "\226\132\155", "\240\157\146\174", "\240\157\146\175", "\240\157\146\176", "\240\157\146\177", "\240\157\146\178", "\240\157\146\179", "\240\157\146\180", "\240\157\146\181", "\240\157\146\182", "\240\157\146\183", "\240\157\146\184", "\240\157\146\185", "\226\132\175", "\240\157\146\187", "\226\132\138", "\240\157\146\189", "\240\157\146\190", "\240\157\146\191", "\240\157\147\128", "\240\157\147\129", "\240\157\147\130", "\240\157\147\131", "\226\132\180", "\240\157\147\133", "\240\157\147\134", "\240\157\147\135", "\240\157\147\136", "\240\157\147\137", "\240\157\147\138", "\240\157\147\139", "\240\157\147\140", "\240\157\147\141", "\240\157\147\142", "\240\157\147\143"}
+local AMfrk = {[0] = "\240\157\148\132", "\240\157\148\133", "\226\132\173", "\240\157\148\135", "\240\157\148\136", "\240\157\148\137", "\240\157\148\138", "\226\132\140", "\226\132\145", "\240\157\148\141", "\240\157\148\142", "\240\157\148\143", "\240\157\148\144", "\240\157\148\145", "\240\157\148\146", "\240\157\148\147", "\240\157\148\148", "\226\132\156", "\240\157\148\150", "\240\157\148\151", "\240\157\148\152", "\240\157\148\153", "\240\157\148\154", "\240\157\148\155", "\240\157\148\156", "\226\132\168", "\240\157\148\158", "\240\157\148\159", "\240\157\148\160", "\240\157\148\161", "\240\157\148\162", "\240\157\148\163", "\240\157\148\164", "\240\157\148\165", "\240\157\148\166", "\240\157\148\167", "\240\157\148\168", "\240\157\148\169", "\240\157\148\170", "\240\157\148\171", "\240\157\148\172", "\240\157\148\173", "\240\157\148\174", "\240\157\148\175", "\240\157\148\176", "\240\157\148\177", "\240\157\148\178", "\240\157\148\179", "\240\157\148\180", "\240\157\148\181", "\240\157\148\182", "\240\157\148\183"}
+local AMbbb = {[0] = "\240\157\148\184", "\240\157\148\185", "\226\132\130", "\240\157\148\187", "\240\157\148\188", "\240\157\148\189", "\240\157\148\190", "\226\132\141", "\240\157\149\128", "\240\157\149\129", "\240\157\149\130", "\240\157\149\131", "\240\157\149\132", "\226\132\149", "\240\157\149\134", "\226\132\153", "\226\132\154", "\226\132\157", "\240\157\149\138", "\240\157\149\139", "\240\157\149\140", "\240\157\149\141", "\240\157\149\142", "\240\157\149\143", "\240\157\149\144", "\226\132\164", "\240\157\149\146", "\240\157\149\147", "\240\157\149\148", "\240\157\149\149", "\240\157\149\150", "\240\157\149\151", "\240\157\149\152", "\240\157\149\153", "\240\157\149\154", "\240\157\149\155", "\240\157\149\156", "\240\157\149\157", "\240\157\149\158", "\240\157\149\159", "\240\157\149\160", "\240\157\149\161", "\240\157\149\162", "\240\157\149\163", "\240\157\149\164", "\240\157\149\165", "\240\157\149\166", "\240\157\149\167", "\240\157\149\168", "\240\157\149\169", "\240\157\149\170", "\240\157\149\171"}
+
+-- token types
+local CONST = 0
+local UNARY = 1
+local BINARY = 2
+local INFIX = 3
+local LEFTBRACKET = 4
+local RIGHTBRACKET = 5
+local SPACE = 6
+local UNDEROVER = 7
+local DEFINITION = 8
+local LEFTRIGHT = 9
+local TEXT = 10
+local BIG = 11
+local LONG = 12
+local STRETCHY = 13
+local MATRIX = 14
+local UNARYUNDEROVER = 15;
+
+local AMquote = {input="\"",   tag="mtext", output="mbox", tex=null, ttype=TEXT};
+local AMsymbols = {
+  [0] = {input = "alpha", tag = "mi", output = "\206\177", tex = nil, ttype = CONST},
+  {input = "beta", tag = "mi", output = "\206\178", tex = nil, ttype = CONST},
+  {input = "chi", tag = "mi", output = "\207\135", tex = nil, ttype = CONST},
+  {input = "delta", tag = "mi", output = "\206\180", tex = nil, ttype = CONST},
+  {input = "Delta", tag = "mo", output = "\206\148", tex = nil, ttype = CONST},
+  {input = "epsi", tag = "mi", output = "\206\181", tex = "epsilon", ttype = CONST},
+  {input = "varepsilon", tag = "mi", output = "\201\155", tex = nil, ttype = CONST},
+  {input = "eta", tag = "mi", output = "\206\183", tex = nil, ttype = CONST},
+  {input = "gamma", tag = "mi", output = "\206\179", tex = nil, ttype = CONST},
+  {input = "Gamma", tag = "mo", output = "\206\147", tex = nil, ttype = CONST},
+  {input = "iota", tag = "mi", output = "\206\185", tex = nil, ttype = CONST},
+  {input = "kappa", tag = "mi", output = "\206\186", tex = nil, ttype = CONST},
+  {input = "lambda", tag = "mi", output = "\206\187", tex = nil, ttype = CONST},
+  {input = "Lambda", tag = "mo", output = "\206\155", tex = nil, ttype = CONST},
+  {input = "lamda", tag = "mi", output = "\206\187", tex = nil, ttype = CONST},
+  {input = "Lamda", tag = "mo", output = "\206\155", tex = nil, ttype = CONST},
+  {input = "mu", tag = "mi", output = "\206\188", tex = nil, ttype = CONST},
+  {input = "nu", tag = "mi", output = "\206\189", tex = nil, ttype = CONST},
+  {input = "omega", tag = "mi", output = "\207\137", tex = nil, ttype = CONST},
+  {input = "Omega", tag = "mo", output = "\206\169", tex = nil, ttype = CONST},
+      {input = "phi", tag = "mi", output = (function()
+              if fixphi then
+                  return "\207\149"
+              else
+                  return "\207\134"
+              end
+          end)(), tex = nil, ttype = CONST}
+  ,
+  
+      {input = "varphi", tag = "mi", output = (function()
+              if fixphi then
+                  return "\207\134"
+              else
+                  return "\207\149"
+              end
+          end)(), tex = nil, ttype = CONST}
+  ,
+  {input = "Phi", tag = "mo", output = "\206\166", tex = nil, ttype = CONST},
+  {input = "pi", tag = "mi", output = "\207\128", tex = nil, ttype = CONST},
+  {input = "Pi", tag = "mo", output = "\206\160", tex = nil, ttype = CONST},
+  {input = "psi", tag = "mi", output = "\207\136", tex = nil, ttype = CONST},
+  {input = "Psi", tag = "mi", output = "\206\168", tex = nil, ttype = CONST},
+  {input = "rho", tag = "mi", output = "\207\129", tex = nil, ttype = CONST},
+  {input = "sigma", tag = "mi", output = "\207\131", tex = nil, ttype = CONST},
+  {input = "Sigma", tag = "mo", output = "\206\163", tex = nil, ttype = CONST},
+  {input = "tau", tag = "mi", output = "\207\132", tex = nil, ttype = CONST},
+  {input = "theta", tag = "mi", output = "\206\184", tex = nil, ttype = CONST},
+  {input = "vartheta", tag = "mi", output = "\207\145", tex = nil, ttype = CONST},
+  {input = "Theta", tag = "mo", output = "\206\152", tex = nil, ttype = CONST},
+  {input = "upsilon", tag = "mi", output = "\207\133", tex = nil, ttype = CONST},
+  {input = "xi", tag = "mi", output = "\206\190", tex = nil, ttype = CONST},
+  {input = "Xi", tag = "mo", output = "\206\158", tex = nil, ttype = CONST},
+  {input = "zeta", tag = "mi", output = "\206\182", tex = nil, ttype = CONST},
+  {input = "*", tag = "mo", output = "\226\139\133", tex = "cdot", ttype = CONST},
+  {input = "**", tag = "mo", output = "\226\136\151", tex = "ast", ttype = CONST},
+  {input = "***", tag = "mo", output = "\226\139\134", tex = "star", ttype = CONST},
+  {input = "//", tag = "mo", output = "/", tex = nil, ttype = CONST},
+  {input = "\\\\", tag = "mo", output = "\\", tex = "backslash", ttype = CONST},
+  {input = "setminus", tag = "mo", output = "\\", tex = nil, ttype = CONST},
+  {input = "xx", tag = "mo", output = "\195\151", tex = "times", ttype = CONST},
+  {input = "|><", tag = "mo", output = "\226\139\137", tex = "ltimes", ttype = CONST},
+  {input = "><|", tag = "mo", output = "\226\139\138", tex = "rtimes", ttype = CONST},
+  {input = "|><|", tag = "mo", output = "\226\139\136", tex = "bowtie", ttype = CONST},
+  {input = "-:", tag = "mo", output = "\195\183", tex = "div", ttype = CONST},
+  {input = "divide", tag = "mo", output = "-:", tex = nil, ttype = DEFINITION},
+  {input = "@", tag = "mo", output = "\226\136\152", tex = "circ", ttype = CONST},
+  {input = "o+", tag = "mo", output = "\226\138\149", tex = "oplus", ttype = CONST},
+  {input = "ox", tag = "mo", output = "\226\138\151", tex = "otimes", ttype = CONST},
+  {input = "o.", tag = "mo", output = "\226\138\153", tex = "odot", ttype = CONST},
+  {input = "sum", tag = "mo", output = "\226\136\145", tex = nil, ttype = UNDEROVER},
+  {input = "prod", tag = "mo", output = "\226\136\143", tex = nil, ttype = UNDEROVER},
+  {input = "^^", tag = "mo", output = "\226\136\167", tex = "wedge", ttype = CONST},
+  {input = "^^^", tag = "mo", output = "\226\139\128", tex = "bigwedge", ttype = UNDEROVER},
+  {input = "vv", tag = "mo", output = "\226\136\168", tex = "vee", ttype = CONST},
+  {input = "vvv", tag = "mo", output = "\226\139\129", tex = "bigvee", ttype = UNDEROVER},
+  {input = "nn", tag = "mo", output = "\226\136\169", tex = "cap", ttype = CONST},
+  {input = "nnn", tag = "mo", output = "\226\139\130", tex = "bigcap", ttype = UNDEROVER},
+  {input = "uu", tag = "mo", output = "\226\136\170", tex = "cup", ttype = CONST},
+  {input = "uuu", tag = "mo", output = "\226\139\131", tex = "bigcup", ttype = UNDEROVER},
+  {input = "!=", tag = "mo", output = "\226\137\160", tex = "ne", ttype = CONST},
+  {input = ":=", tag = "mo", output = ":=", tex = nil, ttype = CONST},
+  {input = "lt", tag = "mo", output = "<", tex = nil, ttype = CONST},
+  {input = "<=", tag = "mo", output = "\226\137\164", tex = "le", ttype = CONST},
+  {input = "lt=", tag = "mo", output = "\226\137\164", tex = "leq", ttype = CONST},
+  {input = "gt", tag = "mo", output = ">", tex = nil, ttype = CONST},
+  {input = ">=", tag = "mo", output = "\226\137\165", tex = "ge", ttype = CONST},
+  {input = "gt=", tag = "mo", output = "\226\137\165", tex = "geq", ttype = CONST},
+  {input = "-<", tag = "mo", output = "\226\137\186", tex = "prec", ttype = CONST},
+  {input = "-lt", tag = "mo", output = "\226\137\186", tex = nil, ttype = CONST},
+  {input = ">-", tag = "mo", output = "\226\137\187", tex = "succ", ttype = CONST},
+  {input = "-<=", tag = "mo", output = "\226\170\175", tex = "preceq", ttype = CONST},
+  {input = ">-=", tag = "mo", output = "\226\170\176", tex = "succeq", ttype = CONST},
+  {input = "in", tag = "mo", output = "\226\136\136", tex = nil, ttype = CONST},
+  {input = "!in", tag = "mo", output = "\226\136\137", tex = "notin", ttype = CONST},
+  {input = "sub", tag = "mo", output = "\226\138\130", tex = "subset", ttype = CONST},
+  {input = "sup", tag = "mo", output = "\226\138\131", tex = "supset", ttype = CONST},
+  {input = "sube", tag = "mo", output = "\226\138\134", tex = "subseteq", ttype = CONST},
+  {input = "supe", tag = "mo", output = "\226\138\135", tex = "supseteq", ttype = CONST},
+  {input = "-=", tag = "mo", output = "\226\137\161", tex = "equiv", ttype = CONST},
+  {input = "~=", tag = "mo", output = "\226\137\133", tex = "cong", ttype = CONST},
+  {input = "~~", tag = "mo", output = "\226\137\136", tex = "approx", ttype = CONST},
+  {input = "prop", tag = "mo", output = "\226\136\157", tex = "propto", ttype = CONST},
+  {input = "and", tag = "mtext", output = "and", tex = nil, ttype = SPACE},
+  {input = "or", tag = "mtext", output = "or", tex = nil, ttype = SPACE},
+  {input = "not", tag = "mo", output = "\194\172", tex = "neg", ttype = CONST},
+  {input = "=>", tag = "mo", output = "\226\135\146", tex = "implies", ttype = CONST},
+  {input = "if", tag = "mo", output = "if", tex = nil, ttype = SPACE},
+  {input = "<=>", tag = "mo", output = "\226\135\148", tex = "iff", ttype = CONST},
+  {input = "AA", tag = "mo", output = "\226\136\128", tex = "forall", ttype = CONST},
+  {input = "EE", tag = "mo", output = "\226\136\131", tex = "exists", ttype = CONST},
+  {input = "_|_", tag = "mo", output = "\226\138\165", tex = "bot", ttype = CONST},
+  {input = "TT", tag = "mo", output = "\226\138\164", tex = "top", ttype = CONST},
+  {input = "|--", tag = "mo", output = "\226\138\162", tex = "vdash", ttype = CONST},
+  {input = "|==", tag = "mo", output = "\226\138\168", tex = "models", ttype = CONST},
+  {input = "(", tag = "mo", output = "(", tex = nil, ttype = LEFTBRACKET},
+  {input = ")", tag = "mo", output = ")", tex = nil, ttype = RIGHTBRACKET},
+  {input = "[", tag = "mo", output = "[", tex = nil, ttype = LEFTBRACKET},
+  {input = "]", tag = "mo", output = "]", tex = nil, ttype = RIGHTBRACKET},
+  {input = "{", tag = "mo", output = "{", tex = nil, ttype = LEFTBRACKET},
+  {input = "}", tag = "mo", output = "}", tex = nil, ttype = RIGHTBRACKET},
+  {input = "|", tag = "mo", output = "|", tex = nil, ttype = LEFTRIGHT},
+  {input = "(:", tag = "mo", output = "\226\140\169", tex = "langle", ttype = LEFTBRACKET},
+  {input = ":)", tag = "mo", output = "\226\140\170", tex = "rangle", ttype = RIGHTBRACKET},
+  {input = "<<", tag = "mo", output = "\226\140\169", tex = nil, ttype = LEFTBRACKET},
+  {input = ">>", tag = "mo", output = "\226\140\170", tex = nil, ttype = RIGHTBRACKET},
+  {input = "{:", tag = "mo", output = "{:", tex = nil, ttype = LEFTBRACKET, ["invisible"] = true},
+  {input = ":}", tag = "mo", output = ":}", tex = nil, ttype = RIGHTBRACKET, ["invisible"] = true},
+  {input = "int", tag = "mo", output = "\226\136\171", tex = nil, ttype = CONST},
+  {input = "dx", tag = "mi", output = "{:d x:}", tex = nil, ttype = DEFINITION},
+  {input = "dy", tag = "mi", output = "{:d y:}", tex = nil, ttype = DEFINITION},
+  {input = "dz", tag = "mi", output = "{:d z:}", tex = nil, ttype = DEFINITION},
+  {input = "dt", tag = "mi", output = "{:d t:}", tex = nil, ttype = DEFINITION},
+  {input = "oint", tag = "mo", output = "\226\136\174", tex = nil, ttype = CONST},
+  {input = "del", tag = "mo", output = "\226\136\130", tex = "partial", ttype = CONST},
+  {input = "grad", tag = "mo", output = "\226\136\135", tex = "nabla", ttype = CONST},
+  {input = "+-", tag = "mo", output = "\194\177", tex = "pm", ttype = CONST},
+  {input = "O/", tag = "mo", output = "\226\136\133", tex = "emptyset", ttype = CONST},
+  {input = "oo", tag = "mo", output = "\226\136\158", tex = "infty", ttype = CONST},
+  {input = "aleph", tag = "mo", output = "\226\132\181", tex = nil, ttype = CONST},
+  {input = "...", tag = "mo", output = "...", tex = "ldots", ttype = CONST},
+  {input = ":.", tag = "mo", output = "\226\136\180", tex = "therefore", ttype = CONST},
+  {input = "/_", tag = "mo", output = "\226\136\160", tex = "angle", ttype = CONST},
+  {input = "/_\\", tag = "mo", output = "\226\150\179", tex = "triangle", ttype = CONST},
+  {input = "'", tag = "mo", output = "\226\128\178", tex = "prime", ttype = CONST},
+  {input = "tilde", tag = "mover", output = "~", tex = nil, ttype = UNARY, ["acc"] = true},
+  {input = "\\ ", tag = "mo", output = " ", tex = nil, ttype = CONST},
+  {input = "frown", tag = "mo", output = "\226\140\162", tex = nil, ttype = CONST},
+  {input = "quad", tag = "mo", output = "  ", tex = nil, ttype = CONST},
+  {input = "qquad", tag = "mo", output = "    ", tex = nil, ttype = CONST},
+  {input = "cdots", tag = "mo", output = "\226\139\175", tex = nil, ttype = CONST},
+  {input = "vdots", tag = "mo", output = "\226\139\174", tex = nil, ttype = CONST},
+  {input = "ddots", tag = "mo", output = "\226\139\177", tex = nil, ttype = CONST},
+  {input = "diamond", tag = "mo", output = "\226\139\132", tex = nil, ttype = CONST},
+  {input = "square", tag = "mo", output = "\226\150\161", tex = nil, ttype = CONST},
+  {input = "|__", tag = "mo", output = "\226\140\138", tex = "lfloor", ttype = CONST},
+  {input = "__|", tag = "mo", output = "\226\140\139", tex = "rfloor", ttype = CONST},
+  {input = "|~", tag = "mo", output = "\226\140\136", tex = "lceiling", ttype = CONST},
+  {input = "~|", tag = "mo", output = "\226\140\137", tex = "rceiling", ttype = CONST},
+  {input = "CC", tag = "mo", output = "\226\132\130", tex = nil, ttype = CONST},
+  {input = "NN", tag = "mo", output = "\226\132\149", tex = nil, ttype = CONST},
+  {input = "QQ", tag = "mo", output = "\226\132\154", tex = nil, ttype = CONST},
+  {input = "RR", tag = "mo", output = "\226\132\157", tex = nil, ttype = CONST},
+  {input = "ZZ", tag = "mo", output = "\226\132\164", tex = nil, ttype = CONST},
+  {input = "f", tag = "mi", output = "f", tex = nil, ttype = UNARY, ["func"] = true},
+  {input = "g", tag = "mi", output = "g", tex = nil, ttype = UNARY, ["func"] = true},
+  {input = "lim", tag = "mo", output = "lim", tex = nil, ttype = UNDEROVER},
+  {input = "Lim", tag = "mo", output = "Lim", tex = nil, ttype = UNDEROVER},
+  {input = "sin", tag = "mo", output = "sin", tex = nil, ttype = UNARY, ["func"] = true},
+  {input = "cos", tag = "mo", output = "cos", tex = nil, ttype = UNARY, ["func"] = true},
+  {input = "tan", tag = "mo", output = "tan", tex = nil, ttype = UNARY, ["func"] = true},
+  {input = "sinh", tag = "mo", output = "sinh", tex = nil, ttype = UNARY, ["func"] = true},
+  {input = "cosh", tag = "mo", output = "cosh", tex = nil, ttype = UNARY, ["func"] = true},
+  {input = "tanh", tag = "mo", output = "tanh", tex = nil, ttype = UNARY, ["func"] = true},
+  {input = "cot", tag = "mo", output = "cot", tex = nil, ttype = UNARY, ["func"] = true},
+  {input = "sec", tag = "mo", output = "sec", tex = nil, ttype = UNARY, ["func"] = true},
+  {input = "csc", tag = "mo", output = "csc", tex = nil, ttype = UNARY, ["func"] = true},
+  {input = "arcsin", tag = "mo", output = "arcsin", tex = nil, ttype = UNARY, ["func"] = true},
+  {input = "arccos", tag = "mo", output = "arccos", tex = nil, ttype = UNARY, ["func"] = true},
+  {input = "arctan", tag = "mo", output = "arctan", tex = nil, ttype = UNARY, ["func"] = true},
+  {input = "coth", tag = "mo", output = "coth", tex = nil, ttype = UNARY, ["func"] = true},
+  {input = "sech", tag = "mo", output = "sech", tex = nil, ttype = UNARY, ["func"] = true},
+  {input = "csch", tag = "mo", output = "csch", tex = nil, ttype = UNARY, ["func"] = true},
+  {input = "exp", tag = "mo", output = "exp", tex = nil, ttype = UNARY, ["func"] = true},
+  {input = "abs", tag = "mo", output = "abs", tex = nil, ttype = UNARY, ["rewriteleftright"] = {[0] = "|", "|"}, 2},
+  {input = "norm", tag = "mo", output = "norm", tex = nil, ttype = UNARY, ["rewriteleftright"] = {[0] = "\226\136\165", "\226\136\165"}, 2},
+  {input = "floor", tag = "mo", output = "floor", tex = nil, ttype = UNARY, ["rewriteleftright"] = {[0] = "\226\140\138", "\226\140\139"}, 2},
+  {input = "ceil", tag = "mo", output = "ceil", tex = nil, ttype = UNARY, ["rewriteleftright"] = {[0] = "\226\140\136", "\226\140\137"}, 2},
+  {input = "log", tag = "mo", output = "log", tex = nil, ttype = UNARY, ["func"] = true},
+  {input = "ln", tag = "mo", output = "ln", tex = nil, ttype = UNARY, ["func"] = true},
+  {input = "det", tag = "mo", output = "det", tex = nil, ttype = UNARY, ["func"] = true},
+  {input = "dim", tag = "mo", output = "dim", tex = nil, ttype = CONST},
+  {input = "mod", tag = "mo", output = "mod", tex = nil, ttype = CONST},
+  {input = "gcd", tag = "mo", output = "gcd", tex = nil, ttype = UNARY, ["func"] = true},
+  {input = "lcm", tag = "mo", output = "lcm", tex = nil, ttype = UNARY, ["func"] = true},
+  {input = "lub", tag = "mo", output = "lub", tex = nil, ttype = CONST},
+  {input = "glb", tag = "mo", output = "glb", tex = nil, ttype = CONST},
+  {input = "min", tag = "mo", output = "min", tex = nil, ttype = UNDEROVER},
+  {input = "max", tag = "mo", output = "max", tex = nil, ttype = UNDEROVER},
+  {input = "uarr", tag = "mo", output = "\226\134\145", tex = "uparrow", ttype = CONST},
+  {input = "darr", tag = "mo", output = "\226\134\147", tex = "downarrow", ttype = CONST},
+  {input = "rarr", tag = "mo", output = "\226\134\146", tex = "rightarrow", ttype = CONST},
+  {input = "->", tag = "mo", output = "\226\134\146", tex = "to", ttype = CONST},
+  {input = ">->", tag = "mo", output = "\226\134\163", tex = "rightarrowtail", ttype = CONST},
+  {input = "->>", tag = "mo", output = "\226\134\160", tex = "twoheadrightarrow", ttype = CONST},
+  {input = ">->>", tag = "mo", output = "\226\164\150", tex = "twoheadrightarrowtail", ttype = CONST},
+  {input = "|->", tag = "mo", output = "\226\134\166", tex = "mapsto", ttype = CONST},
+  {input = "larr", tag = "mo", output = "\226\134\144", tex = "leftarrow", ttype = CONST},
+  {input = "harr", tag = "mo", output = "\226\134\148", tex = "leftrightarrow", ttype = CONST},
+  {input = "rArr", tag = "mo", output = "\226\135\146", tex = "Rightarrow", ttype = CONST},
+  {input = "lArr", tag = "mo", output = "\226\135\144", tex = "Leftarrow", ttype = CONST},
+  {input = "hArr", tag = "mo", output = "\226\135\148", tex = "Leftrightarrow", ttype = CONST},
+  {input = "sqrt", tag = "msqrt", output = "sqrt", tex = nil, ttype = UNARY},
+  {input = "root", tag = "mroot", output = "root", tex = nil, ttype = BINARY},
+  {input = "frac", tag = "mfrac", output = "/", tex = nil, ttype = BINARY},
+  {input = "/", tag = "mfrac", output = "/", tex = nil, ttype = INFIX},
+  {input = "stackrel", tag = "mover", output = "stackrel", tex = nil, ttype = BINARY},
+  {input = "overset", tag = "mover", output = "stackrel", tex = nil, ttype = BINARY},
+  {input = "underset", tag = "munder", output = "stackrel", tex = nil, ttype = BINARY},
+  {input = "_", tag = "msub", output = "_", tex = nil, ttype = INFIX},
+  {input = "^", tag = "msup", output = "^", tex = nil, ttype = INFIX},
+  {input = "hat", tag = "mover", output = "^", tex = nil, ttype = UNARY, ["acc"] = true},
+  {input = "bar", tag = "mover", output = "\194\175", tex = "overline", ttype = UNARY, ["acc"] = true},
+  {input = "vec", tag = "mover", output = "\226\134\146", tex = nil, ttype = UNARY, ["acc"] = true},
+  {input = "dot", tag = "mover", output = ".", tex = nil, ttype = UNARY, ["acc"] = true},
+  {input = "ddot", tag = "mover", output = "..", tex = nil, ttype = UNARY, ["acc"] = true},
+  {input = "ul", tag = "munder", output = "\204\178", tex = "underline", ttype = UNARY, ["acc"] = true},
+  {input = "ubrace", tag = "munder", output = "\226\143\159", tex = "underbrace", ttype = UNARYUNDEROVER, ["acc"] = true},
+  {input = "obrace", tag = "mover", output = "\226\143\158", tex = "overbrace", ttype = UNARYUNDEROVER, ["acc"] = true},
+  {input = "text", tag = "mtext", output = "text", tex = nil, ttype = TEXT},
+  {input = "mbox", tag = "mtext", output = "mbox", tex = nil, ttype = TEXT},
+  {input = "color", tag = "mstyle", ttype = BINARY},
+  {input = "cancel", tag = "menclose", output = "cancel", tex = nil, ttype = UNARY},
+  AMquote,
+  {input = "bb", tag = "mstyle", atname = "mathvariant", atval = "bold", output = "bb", tex = nil, ttype = UNARY},
+  {input = "mathbf", tag = "mstyle", atname = "mathvariant", atval = "bold", output = "mathbf", tex = nil, ttype = UNARY},
+  {input = "sf", tag = "mstyle", atname = "mathvariant", atval = "sans-serif", output = "sf", tex = nil, ttype = UNARY},
+  {input = "mathsf", tag = "mstyle", atname = "mathvariant", atval = "sans-serif", output = "mathsf", tex = nil, ttype = UNARY},
+  {input = "bbb", tag = "mstyle", atname = "mathvariant", atval = "double-struck", output = "bbb", tex = nil, ttype = UNARY, codes = AMbbb},
+  {input = "mathbb", tag = "mstyle", atname = "mathvariant", atval = "double-struck", output = "mathbb", tex = nil, ttype = UNARY, codes = AMbbb},
+  {input = "cc", tag = "mstyle", atname = "mathvariant", atval = "script", output = "cc", tex = nil, ttype = UNARY, codes = AMcal},
+  {input = "mathcal", tag = "mstyle", atname = "mathvariant", atval = "script", output = "mathcal", tex = nil, ttype = UNARY, codes = AMcal},
+  {input = "tt", tag = "mstyle", atname = "mathvariant", atval = "monospace", output = "tt", tex = nil, ttype = UNARY},
+  {input = "mathtt", tag = "mstyle", atname = "mathvariant", atval = "monospace", output = "mathtt", tex = nil, ttype = UNARY},
+  {input = "fr", tag = "mstyle", atname = "mathvariant", atval = "fraktur", output = "fr", tex = nil, ttype = UNARY, codes = AMfrk},
+  {input = "mathfrak", tag = "mstyle", atname = "mathvariant", atval = "fraktur", output = "mathfrak", tex = nil, ttype = UNARY, codes = AMfrk},
+}
+
+return asciimath
+
