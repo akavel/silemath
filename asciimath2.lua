@@ -795,6 +795,117 @@ local function AMparseIexpr(str)
   return node, str
 end
 
+local function AMparseExpr(str, rightbracket)
+  local symbol, node, result, i
+  newFrag = document.createDocumentFragment()
+  repeat
+    str = AMremoveCharsAndBlanks(str, 0)
+    result = {AMparseIexpr(str)}
+    node = result[1]
+    str = result[2]
+    symbol = AMgetSymbol(str)
+    if symbol.ttype == INFIX and symbol.input == '/' then
+      str = AMremoveCharsAndBlanks(str, #symbol.input)
+      result = {AMparseIexpr(str)}
+      if result[1] == nil then  -- show box in place of missing argument
+        result[1] = createMmlNode('mo', document.createTextNode('\226\150\161'))
+      else
+        AMremoveBrackets(result[1])
+      end
+      str = result[2]
+      AMremoveBrackets(node)
+      node = createMmlNode(symbol.tag, node)
+      node.appendChild(result[1])
+      newFrag.appendChild(node)
+      symbol = AMgetSymbol(str)
+    elseif node~=nil then
+      newFrag.appendChild(node)
+    end
+  until not ((symbol.ttype ~= RIGHTBRACKET and
+           (symbol.ttype ~= LEFTRIGHT or rightbracket)
+           or AMnestingDepth == 0) and symbol~=nil and symbol.output~="")
+  if symbol.ttype == RIGHTBRACKET or symbol.ttype == LEFTRIGHT then
+    local len = #newFrag.childNodes
+    if len>0 and newFrag.childNodes[len].nodeName == 'mrow'
+      and newFrag.childNodes[len].lastChild
+      and newFrag.childNodes[len].lastChild.firstChild then  -- matrix
+      local right = newFrag.childNodes[len].lastChild.firstChild.nodeValue
+      if right==')' or right==']' then
+        local left = newFrag.childNodes[len].firstChild.firstChild.nodeValue
+        if left=='(' and right==')' and symbol.output~='}' or
+          left=='[' and right==']' then
+          local pos = {}  -- positions of commas
+          local matrix = true
+          local m = #newFrag.childNodes
+          local i = 1
+          while matrix and i<=m do
+            pos[i] = {}
+            node = newFrag.childNodes[i]
+            if matrix then
+              matrix = node.nodeName=='mrow' and
+              (i==m or node.nextSibling.nodeName=='mo' and
+                node.nextSibling.firstChild.nodeValue==',') and
+              node.firstChild.firstChild.nodeValue==left and
+              node.lastChild.firstChild.nodeValue==right
+            end
+            if matrix then
+              for j = 1, #node.childNodes do
+                if node.childNodes[j].firstChild.nodeValue==',' then
+                  pos[i][#pos[i]+1] = j
+                end
+              end
+            end
+            if matrix and i>2 then
+              matrix = (#pos[i] == #pos[i-2])
+            end
+            i = i+2
+          end
+          matrix = matrix and (#pos>1 or #pos[1]>0)
+          if matrix then
+            local row, frag, n, k, table
+            table = document.createDocumentFragment()
+            local i = 1
+            while i<=m do
+              row = document.createDocumentFragment()
+              frag = document.createDocumentFragment()
+              node = newFrag.firstChild  -- <mrow>(-,-,...,-,-)</mrow>
+              n = #node.childNodes
+              k = 1
+              for j = 2, n-1 do
+                if type(pos[i][k]) ~= 'nil' and j==pos[i][k] then
+                  node.removeChild(node.firstChild)  -- remove ,
+                  row.appendChild(createMmlNode('mtd', frag))
+                  k = k + 1
+                else
+                  frag.appendChild(node.firstChild)
+                end
+              end
+              row.appendChild(createMmlNode('mtd', frag))
+              if #newFrag.childNodes > 2 then
+                newFrag.removeChild(newFrag.firstChild)  -- remove <mrow>)</mrow>
+                newFrag.removeChild(newFrag.firstChild)  -- remove <mo>,</mo>
+              end
+              table.appendChild(createMmlNode('mtr', row))
+              i = i+2
+            end
+            node = createMmlNode('mtable', table)
+            if type(symbol.invisible) == 'boolean' and symbol.invisible then
+              node.setAttribute('columnalign', 'left')
+            end
+            newFrag.replaceChild(node, newFrag.firstChild)
+          end
+        end
+      end
+    end
+    str = AMremoveCharsAndBlanks(str, #symbol.input)
+    if type(symbol.invisible) ~= 'boolean' or not symbol.invisible then
+      node = createMmlNode('mo', document.createTextNode(symbol.output))
+      newFrag.appendChild(node)
+    end
+  end
+  return newFrag, str
+end
+
 
 
 
