@@ -906,6 +906,35 @@ local function AMparseExpr(str, rightbracket)
   return newFrag, str
 end
 
+local function parseMath(str, latex)
+  local frag, node
+  AMnestingDepth = 0
+  -- some basic cleanup for dealing with stuff editors like TinyMCE adds
+  str = str:gsub('&nbsp;', '')
+  str = str:gsub('&gt;', '>')
+  str = str:gsub('&lt;', '<')
+  for _,f in ipairs{'Sin', 'Cos', 'Tan', 'Arcsin', 'Arccos', 'Arctan', 'Sinh', 'Cosh', 'Tanh', 'Cot', 'Sec', 'Csc', 'Log', 'Ln', 'Abs'} do
+    str = str:gsub(f, f:lower())
+  end
+  frag = {AMparseExpr(str:gsub('^%s+', ''), false)}[1]
+  node = createMmlNode('mstyle', frag)
+  if mathcolor ~= '' then
+    node.setAttribute('mathcolor', mathcolor)
+  end
+  if mathfontfamily ~= '' then
+    node.setAttribute('fontfamily', mathfontfamily)
+  end
+  if displaystyle then
+    node.setAttribute('displaystyle', 'true')
+  end
+  node = createMmlNode('math', node)
+  if showasciiformulaonhover then  -- fixed by djhsu so newline
+    node.setAttribute('title', str:gsub('%s+', ' '))  -- does not show in Gecko
+  end
+  return node
+end
+
+
 
 
 
