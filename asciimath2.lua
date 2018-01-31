@@ -734,6 +734,67 @@ function AMparseSexpr(str)
   end
 end
 
+local function AMparseIexpr(str)
+  local symbol, sym1, sym2, node, result, underover
+  str = AMremoveCharsAndBlanks(str, 0)
+  sym1 = AMgetSymbol(str)
+  result = {AMparseSexpr(str)}
+  node = result[1]
+  str = result[2]
+  symbol = AMgetSymbol(str)
+  if symbol.ttype == INFIX and symbol.input ~= '/' then
+    str = AMremoveCharsAndBlanks(str, #symbol.input)
+    result = {AMparseSexpr(str)}
+    if result[1] == nil then  -- show box in place of missing argument
+      result[1] = createMmlNode('mo', document.createTextNode('\226\150\161'))
+    else
+      AMremoveBrackets(result[1])
+    end
+    str = result[2]
+    underover = (sym1.ttype == UNDEROVER or sym1.ttype == UNARYUNDEROVER)
+    if symbol.input == '_' then
+      sym2 = AMgetSymbol(str)
+      if sym2.input == '^' then
+        str = AMremoveCharsAndBlanks(str, #sym2.input)
+        local res2 = AMparseSexpr(str)
+        AMremoveBrackets(res2[1])
+        str = res2[2]
+        if underover then
+          node = createMmlNode('munderover', node)
+        else
+          node = createMmlNode('msubsup', node)
+        end
+        node.appendChild(result[1])
+        node.appendChild(res2[1])
+        node = createMmlNode('mrow', node)  -- so sum does not stretch
+      else
+        if underover then
+          node = createMmlNode('munder', node)
+        else
+          node = createMmlNode('msub', node)
+        end
+        node.appendChild(result[1])
+      end
+    elseif symbol.input == '^' and underover then
+      node = createMmlNode('mover', node)
+      node.appendChild(result[1])
+    else
+      node = createMmlNode(symbol.tag, node)
+      node.appendChild(result[1])
+    end
+    if type(sym1.func)~='nil' and sym1.func then
+      sym2 = AMgetSymbol(str)
+      if sym2.ttype ~= INFIX and sym2.ttype ~= RIGHTBRACKET then
+        result = {AMparseIexpr(str)}
+        node = createMmlNode('mrow', node)
+        node.appendChild(result[1])
+        str = result[2]
+      end
+    end
+  end
+  return node, str
+end
+
 
 
 
