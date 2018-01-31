@@ -59,6 +59,17 @@ function asciimath.init()
   return true
 end
 
+local function charAt(str, i)
+  -- FIXME(akavel): for example, charAt('ż', 1) == 'ż'
+  -- FIXME(akavel): for example, charAt('żółć', 3) == 'ł'
+  error 'FIXME(akavel): get rune at position i in UTF-8 string'
+end
+
+local function charAt(str, i)
+  -- FIXME(akavel): for example, charAt('ż', 1) == 380
+  error 'FIXME(akavel): get code of rune at position i in UTF-8 string'
+end
+
 local function translate(spanclassAM)
   error 'NIY'
 end
@@ -628,12 +639,12 @@ function AMparseSexpr(str)
             local newst = {}
             for j = 1, #st do
               -- FIXME(akavel): make sure below works ok for UTF-8 chars...
-              if st:byte(j)>64 and st:byte(j)<91 then
-                newst = newst .. symbol.codes[st:byte(j)-64]
-              elseif st:byte(j)>96 and st:byte(j)<123 then
-                newst = newst .. symbol.codes[st:byte(j)-70]
+              if charCodeAt(st, j)>64 and charCodeAt(st, j)<91 then
+                newst = newst .. symbol.codes[charCodeAt(st, j)-64]
+              elseif charCodeAt(st, j)>96 and charCodeAt(st, j)<123 then
+                newst = newst .. symbol.codes[charCodeAt(st, j)-70]
               else
-                newst = newst .. st:sub(j,j)
+                newst = newst .. charAt(st, j)
               end
             end
             if result[1].nodeName == 'mi' then
@@ -666,7 +677,63 @@ function AMparseSexpr(str)
     end
     AMremoveBrackets(result2[1])
     if symbol.input == 'color' then
-      if str:
+      if str:sub(1,1)=='{' then i=str:find('}', 1, true)
+      elseif str:sub(1,1)=='(' then i=str:find(')', 1, true)
+      elseif str:sub(1,1)=='[' then i=str:find(']', 1, true)
+      end
+      st = str:sub(2,i)
+      node = createMmlNode(symbol.tag, result2[1])
+      node.setAttribute('mathcolor', st)
+      return node, result2[2]
+    end
+    if symbol.input == 'root' or symbol.output == 'stackrel' then
+      newFrag.appendChild(result2[1])
+    end
+    newFrag.appendChild(result[1])
+    if symbol.input == 'frac' then
+      newFrag.appendChild(result2[1])
+    end
+    return createMmlNode(symbol.tag, newFrag), result2[2]
+  elseif case==INFIX then
+    str = AMremoveCharsAndBlanks(str, #symbol.input)
+    return createMmlNode('mo', document.createTextNode(symbol.output)), str
+  elseif case==SPACE then
+    str = AMremoveCharsAndBlanks(str, #symbol.input)
+    node = createMmlNode('mspace')
+    node.setAttribute('width', '1ex')
+    newFrag.appendChild(node)
+    newFrag.appendChild(
+      createMmlNode(symbol.tag, document.createTextNode(symbol.output)))
+    node = createMmlNode('mspace')
+    node.setAttribute('width', '1ex')
+    newFrag.appendChild(node)
+    return createMmlNode('mrow', newFrag), str
+  elseif case==LEFTRIGHT then
+    AMnestingDepth = AMnestingDepth + 1
+    str = AMremoveCharsAndBlanks(str, #symbol.input)
+    result = {AMparseExpr(str, false)}
+    AMnestingDepth = AMnestingDepth - 1
+    st = ''
+    if result[1].lastChild ~= nil then
+      st = result[1].lastChild.firstChild.nodeValue
+    end
+    if st == '|' then  -- its an absolute value subterm
+      node = createMmlNode('mo', document.createTextNode(symbol.output))
+      node = createMmlNode('mrow', node)
+      node.appendChild(result[1])
+      return node, result[2]
+    else  -- the '|' is a \mid so use unicode 2223 (divides) for spacing
+      node = createMmlNode('mo', document.createTextNode('\226\136\163'))
+      node = createMmlNode('mrow', node)
+      return node, str
+    end
+  else  -- default
+    str = AMremoveCharsAndBlanks(str, #symbol.input)
+    return createMmlNode(symbol.tag,  -- its a constant
+                         document.createTextNode(symbol.output)), str
+  end
+end
+
 
 
 
