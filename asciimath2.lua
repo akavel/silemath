@@ -394,8 +394,8 @@ local function define(oldstr,newstr)
   refreshSymbols() -- this may be a problem if many symbols are defined!
 end
 
+--remove n characters and any following blanks
 local function AMremoveCharsAndBlanks(str,n)
-  --remove n characters and any following blanks
   error 'NIY'
   -- var st;
   -- if (str.charAt(n)=="\\" && str.charAt(n+1)!="\\" && str.charAt(n+1)!=" ") 
@@ -404,6 +404,188 @@ local function AMremoveCharsAndBlanks(str,n)
   -- for (var i=0; i<st.length && st.charCodeAt(i)<=32; i=i+1);
   -- return st.slice(i);
 end
+
+-- return position >=n where str appears or would be inserted
+-- assumes arr is sorted
+local function position(arr, str, n)
+  -- TODO(akavel): optimize if necessary (bisect?); original JS version was
+  -- better optimized, here I translated a naive version
+  for i = n, #arr do
+    if arr[i] >= str then
+      return i
+    end
+  end
+  return #arr
+end
+
+-- return maximal initial substring of str that appears in names
+-- return null if there is none
+local function AMgetSymbol(str)
+  local k = 1  -- new pos
+  local j = 1  -- old pos
+  local mk  -- match pos
+  local st
+  local tagst
+  local match = ''
+  local more = true
+  for i = 1,#str do
+    if not more then break end
+    st = str:sub(1, i)  -- initial substring of length i
+    j = k
+    k = position(AMnames, st, j)
+    if k<=#AMnames and str:sub(1, #AMnames[k]) == AMnames[k] then
+      match = AMnames[k]
+      mk = k
+      i = #match
+    end
+    more = (k <= #AMnames and str:sub(1, #AMnames[k]) >= AMnames[k])
+  end
+  AMpreviousSymbol = AMcurrentSymbol
+  if match ~= '' then
+    AMcurrentSymbol = AMsymbols[mk].ttype
+    return AMsymbols[mk]
+  end
+  -- if str[1] is a digit or - return maxsubstring of digits.digits
+  AMcurrentSymbol = CONST
+  k = 1
+  st = str:sub(1, 1)
+  local integ = true
+  while '0' <= st and st <= '9' and k <= #str do
+    k = k+1
+    st = str:sub(k, k)
+  end
+  if st == decimalsign then
+    st = str:sub(k+1, k+1)
+    if '0' <= st and st <= '9' then
+      integ = false
+      k = k+1
+      while '0' <= st and st <= '9' and k <= #str do
+        k = k+1
+        st = str:sub(k, k)
+      end
+    end
+  end
+  if (integ and k>1) or k>2 then
+    st = str:sub(1, k-1)
+    tagst = 'mn'
+  else
+    k = 2
+    st = str:sub(1, 1)  -- take 1 character
+    if ('A' > st or st > 'Z') and ('a' > st or st > 'z') then
+      tagst = 'mo'
+    else
+      tagst = 'mi'
+    end
+  end
+  if st == '-' and AMpreviousSymbol == INFIX then
+    AMcurrentSymbol = INFIX  -- trick '/' into recognizing '-' on second parse
+    return {input=st, tag=tagst, output=st, ttype=UNARY, func=true}
+  end
+  return {input=st, tag=tagst, output=st, ttype=CONST}
+end
+
+local function AMremoveBrackets(node)
+  local st
+  if not node.hasChildNodes() then return end
+  if node.firstChild.hasChildNodes() and (node.nodeName=='mrow' or node.nodeName=='M:MROW') then
+    st = node.firstChild.firstChild.nodeValue
+    if st=='(' or st=='[' or st=='{' then
+      node.removeChild(node.firstChild)
+    end
+  end
+  if node.lastChild.hasChildNodes() and (node.nodeName=='mrow' or node.nodeName=='M:MROW') then
+    st = node.lastChild.firstChild.nodeValue
+    if st==')' or st==']' or st=='}' then
+      node.removeChild(node.lastChild)
+    end
+  end
+end
+
+--[[
+Parsing ASCII math expressions with the following grammar
+v ::= [A-Za-z] | greek letters | numbers | other constant symbols
+u ::= sqrt | text | bb | other unary symbols for font commands
+b ::= frac | root | stackrel         binary symbols
+l ::= ( | [ | { | (: | {:            left brackets
+r ::= ) | ] | } | :) | :}            right brackets
+S ::= v | lEr | uS | bSS             Simple expression
+I ::= S_S | S^S | S_S^S | S          Intermediate expression
+E ::= IE | I/I                       Expression
+Each terminal symbol is translated into a corresponding mathml node.
+--]]
+
+local AMnestingDepth, AMpreviousSymbol, AMcurrentSymbol
+
+-- parses str and returns (node,tailstr)
+function AMparseSexpr(str)
+  local symbol, node, result, i, st
+  local newFrag = document.createDocumentFragment()
+  str = AMremoveCharsAndBlanks(str, 0)
+  symbol = AMgetSymbol(str)  -- either a token or a bracket or empty
+  if symbol == nil or symbol.ttype == RIGHTBRACKET and AMnestingDepth > 0 then
+    return nil, str
+  end
+  if symbol.ttype == DEFINITION then
+    str = symbol.output .. AMremoveCharsAndBlanks(str, symbol.input.length)
+    symbol = AMgetSymbol(str)
+  end
+  local case = symbol.tttype
+  if case==UNDEROVER or case==CONST then
+    str = AMremoveCharsAndBlanks(str, symbol.input.length)
+    return createMmlNode(symbol.tag,  -- its a constant
+                         document.createTextNode(symbol.output)), str
+  elseif case==LEFTBRACKET then  -- read (expr+)
+    AMnestingDepth = AMnestingDepth + 1
+    str = AMremoveCharsAndBlanks(str, symbol.input.length)
+    result = {AMparseExpr(str, true)}
+    AMnestingDepth = AMnestingDepth - 1
+    if type(symbol.invisible) == 'boolean' and symbol.invisible then
+      node = createMmlNode('mrow', result[1])
+    else
+      node = createMmlNode('mo', document.createTextNode(symbol.output))
+      node = createMmlNode('mrow', node)
+      node.appendChild(result[1])
+    end
+    return node, result[2]
+  elseif case==TEXT then
+    if symbol~=AMquote then
+      str = AMremoveCharsAndBlanks(str, symbol.input.length)
+    end
+    if str:sub(1,1)=='{' then
+      i = str:find('}', 1, true)
+    elseif str:sub(1,1)=='(' then
+      i = str:find(')', 1, true)
+    elseif str:sub(1,1)=='[' then
+      i = str:find(']', 1, true)
+    elseif symbol==AMquote then
+      i = str:find('"', 2, true)
+    else
+      i = 1
+    end
+    if i == nil then
+      i = #str+1
+    end
+    st = str:sub(2,i-1)
+    if st:sub(1,1) == ' ' then
+      node = createMmlNode('mspace')
+      node.setAttribute('width', '1ex')
+      newFrag.appendChild(node)
+    end
+    newFrag.appendChild(
+      createMmlNode(symbol.tag, document.createTextNode(st)))
+    if st:sub(-1) == ' ' then
+      node = createMmlNode('mspace')
+      node.setAttribute('width', '1ex')
+      newFrag.appendChild(node)
+    end
+    str = AMremoveCharsAndBlanks(str, i+1)
+    return createMmlNode('mrow', newFrag), str
+  elseif case==UNARYUNDEROVER or case==UNARY then
+    str = AMremoveCharsAndBlanks(str, symbol.input.length)
+    result = {AMparseSexpr(str)}
+
+
+
 
 return asciimath
 
