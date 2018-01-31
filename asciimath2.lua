@@ -526,17 +526,17 @@ function AMparseSexpr(str)
     return nil, str
   end
   if symbol.ttype == DEFINITION then
-    str = symbol.output .. AMremoveCharsAndBlanks(str, symbol.input.length)
+    str = symbol.output .. AMremoveCharsAndBlanks(str, #symbol.input)
     symbol = AMgetSymbol(str)
   end
   local case = symbol.tttype
   if case==UNDEROVER or case==CONST then
-    str = AMremoveCharsAndBlanks(str, symbol.input.length)
+    str = AMremoveCharsAndBlanks(str, #symbol.input)
     return createMmlNode(symbol.tag,  -- its a constant
                          document.createTextNode(symbol.output)), str
   elseif case==LEFTBRACKET then  -- read (expr+)
     AMnestingDepth = AMnestingDepth + 1
-    str = AMremoveCharsAndBlanks(str, symbol.input.length)
+    str = AMremoveCharsAndBlanks(str, #symbol.input)
     result = {AMparseExpr(str, true)}
     AMnestingDepth = AMnestingDepth - 1
     if type(symbol.invisible) == 'boolean' and symbol.invisible then
@@ -549,7 +549,7 @@ function AMparseSexpr(str)
     return node, result[2]
   elseif case==TEXT then
     if symbol~=AMquote then
-      str = AMremoveCharsAndBlanks(str, symbol.input.length)
+      str = AMremoveCharsAndBlanks(str, #symbol.input)
     end
     if str:sub(1,1)=='{' then
       i = str:find('}', 1, true)
@@ -581,8 +581,93 @@ function AMparseSexpr(str)
     str = AMremoveCharsAndBlanks(str, i+1)
     return createMmlNode('mrow', newFrag), str
   elseif case==UNARYUNDEROVER or case==UNARY then
-    str = AMremoveCharsAndBlanks(str, symbol.input.length)
+    str = AMremoveCharsAndBlanks(str, #symbol.input)
     result = {AMparseSexpr(str)}
+    if result[1] == nil then
+      return createMmlNode(symbol.tag,
+        document.createTextNode(symbol.output)), str
+    end
+    if type(symbol.func)=='boolean' and symbol.func then  -- functions hack
+      st = str:sub(1,1)
+      if st=='^' or st=='_' or st=='/' or st=='|' or st==',' or
+        (#symbol.input==1 and symbol.input:match('%w') and st~='(') then
+        return createMmlNode(symbol.tag,
+          document.createTextNode(symbol.output)), str
+      else
+        node = createMmlNode('mrow',
+          createMmlNode(symbol.tag, document.createTextNode(symbol.output)))
+        node.appendChild(result[1])
+        return node, result[2]
+      end
+    end
+    AMremoveBrackets(result[1])
+    if symbol.input == 'sqrt' then  -- sqrt
+      return createMmlNode(symbol.tag, result[1]), result[2]
+    elseif type(symbol.rewriteleftright) ~= 'nil' then  -- abs, floor, ceil
+      node = createMmlNode('mrow', createMmlNode('mo', document.createTextNode(symbol.rewriteleftright[1])))
+      node.appendChild(result[1])
+      node.appendChild(createMmlNode('mo', document.createTextNode(symbol.rewriteleftright[2])))
+      return node, result[2]
+    elseif symbol.input == 'cancel' then  -- cancel
+      node = createMmlNode(symbol.tag, result[1])
+      node.setAttribute('notation', 'updiagonalstrike')
+      return node, result[2]
+    elseif type(symbol.acc) == 'boolean' and symbol.acc then  -- accent
+      node = createMmlNode(symbol.tag, result[1])
+      node.appendChild(createMmlNode('mo', document.createTextNode(symbol.output)))
+      return node, result[2]
+    else  -- font change command
+      if type(symbol.codes) ~= 'nil' then
+        for i = 1, #result[1].childNodes do
+          if result[1].childNodes[i].nodeName == 'mi' or result[1].nodeName == 'mi' then
+            if result[1].nodeName == 'mi' then
+              st = result[1].firstChild.nodeValue
+            else
+              st = result[1].childNodes[i].firstChild.nodeValue
+            end
+            local newst = {}
+            for j = 1, #st do
+              -- FIXME(akavel): make sure below works ok for UTF-8 chars...
+              if st:byte(j)>64 and st:byte(j)<91 then
+                newst = newst .. symbol.codes[st:byte(j)-64]
+              elseif st:byte(j)>96 and st:byte(j)<123 then
+                newst = newst .. symbol.codes[st:byte(j)-70]
+              else
+                newst = newst .. st:sub(j,j)
+              end
+            end
+            if result[1].nodeName == 'mi' then
+              result[1] = createMmlNode('mo').
+                appendChild(document.createTextNode(newst))
+            else
+              result[1].replaceChild(createMmlNode('mo').
+                appendChild(document.createTextNode(newst)),
+                result[1].childNodes[i])
+            end
+          end
+        end
+      end
+      node = createMmlNode(symbol.tag, result[1])
+      node.setAttribute(symbol.atname, symbol.atval)
+      return node, result[2]
+    end
+  elseif case==BINARY then
+    str = AMremoveCharsAndBlanks(str, #symbol.input)
+    result = {AMparseSexpr(str)}
+    if result[1]==nil then
+      return createMmlNode('mo',
+        document.createTextNode(symbol.input)), str
+    end
+    AMremoveBrackets(result[1])
+    local result2 = {AMparseSexpr(result[2])}
+    if result2[1]==nil then
+      return createMmlNode('mo',
+        document.createTextNode(symbol.input)), str
+    end
+    AMremoveBrackets(result2[1])
+    if symbol.input == 'color' then
+      if str:
+
 
 
 
