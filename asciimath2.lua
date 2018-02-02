@@ -53,12 +53,7 @@ local fixphi = true;             --false to return to legacy phi/varphi mapping
 local isIE = false;
 local noMathML, translated = false, false;
 
-function asciimath.init()
-  -- var msg, warnings = new Array()
-  if not noMathML then initSymbols() end
-  return true
-end
-
+-- NOTE(akavel): stubs for some JS functionalities
 local function charAt(str, i)
   -- FIXME(akavel): test this for correctness
   -- FIXME(akavel): for example, charAt('ż', 1) == 'ż'
@@ -71,7 +66,6 @@ local function charAt(str, i)
     end
   end
 end
-
 local function charCodeAt(str, i)
   -- FIXME(akavel): test this for correctness
   -- FIXME(akavel): for example, charCodeAt('ż', 1) == 380
@@ -89,10 +83,120 @@ local function charCodeAt(str, i)
   end
   return code
 end
-
-local function translate(spanclassAM)
-  error 'NIY'
+local Tag = function(self, name)
+  if name == 'childNodes' then
+    return setmetatable({_childs = self.childs}, {__index = function(self, name)
+      if name == 'length' then
+        return self._childs and #self._childs or 0
+      elseif type(name)=='number' then
+        return self._childs[name+1]
+      end
+    end})
+  elseif name == 'nodeName' then
+    return self.tag
+  elseif name == 'firstChild' then
+    return (self.childs or {})[1]  -- TODO: is this ok?
+  elseif name == 'lastChild' then
+    return self.childs[#self.childs]  -- TODO: is this ok?
+  elseif name == 'nextSibling' then
+    if not self.parent then error('no parent') end
+    for i,ch in ipairs(self.parent.childs) do
+      if ch==self then
+        return self.parent.childs[i+1]
+      end
+    end
+  end
+  local funcs = {
+    appendChild = function(self, child)
+      if child._fragment then
+        while child.childs do
+          self:appendChild(child:removeChild(child.childs[1]))
+        end
+      else
+        if child.parent then child.parent:removeChild(child) end
+        if not self.childs then self.childs = {} end
+        child.parent = self
+        self.childs[#self.childs+1] = child
+      end
+      return child
+    end,
+    replaceChild = function(self, new, old)
+      if new._fragment then
+        error("NIY: replaceChild using document-fragment")
+      end
+      for i,ch in ipairs(self.childs or {}) do
+        if ch==old then
+          self.childs[i] = new
+          new.parent = self
+          old.parent = nil
+          return old
+        end
+      end
+    end,
+    setAttribute = function(self, name, value)
+      if not self.attrs then self.attrs = {} end
+      self.attrs[name] = value
+    end,
+    hasChildNodes = function(self)
+      return self.childs and true or false
+    end,
+    removeChild = function(self, cut)
+      for i,ch in ipairs(self.childs) do
+        if ch==cut then
+          table.remove(self.childs, i)
+          if #self.childs==0 then
+            self.childs = nil
+          end
+          cut.parent = nil
+          return cut
+        end
+      end
+    end,
+    toxml = function(self)
+      if self._fragment then
+        local t = {}
+        for _,ch in ipairs(self.childs) do
+          t[#t+1] = string.format("< %s >", toxml(ch))
+        end
+        return table.concat(t, '')
+      end
+      return toxml(self)
+    end,
+  }
+  return funcs[name]
 end
+local document = {
+  createElementNS = function(self, namespace, tag)
+    return setmetatable({tag = tag}, {__index = Tag})
+  end,
+  createDocumentFragment = function(self)
+    return setmetatable({_fragment = true}, {__index = Tag})
+  end,
+  createTextNode = function(self, text)
+    text = string.gsub(text, '.', {
+      [' '] = '&nbsp;',
+      ['<'] = '&lt;',
+      ['>'] = '&gt;',
+      ['&'] = '&amp;',
+      -- TODO(akavel): '"' and "'" ?
+    })
+    return setmetatable({text = text}, {__index = function(self, name)
+      if name == 'hasChildNodes' then
+        return function() return false end
+      elseif name == 'nodeName' then
+        return '#text'
+      elseif name == 'nodeValue' then
+        return self.text
+      elseif name == '_fragment' then
+        return false
+      elseif name == 'parent' then
+        return nil  -- if non nil, then __index wouldn't even be called
+      end
+      error(debug.traceback("tried to access string's method: "..name, 2))
+    end})
+  end,
+  printf = function(_, fmt, ...) print(string.format(fmt, ...)) end,
+}
 
 local function createElementXHTML(t)
   return document.createElementNS("http://www.w3.org/1999/xhtml",t)
@@ -393,23 +497,7 @@ local AMsymbols = {
   {input = "mathfrak", tag = "mstyle", atname = "mathvariant", atval = "fraktur", output = "mathfrak", tex = nil, ttype = UNARY, codes = AMfrk},
 }
 
-function compareNames(s1,s2)
-  error 'NIY'
-end
-
 local AMnames = {}; --list of input symbols
-
-local function initSymbols()
-  local symlen = #AMsymbols
-  for i=1,#symlen do
-    if AMsymbols[i].tex then
-      AMsymbols[#AMsymbols+1] = {
-        input=AMsymbols[i].tex, tag=AMsymbols[i].tag, output=AMsymbols[i].output, ttype=AMsymbols[i].ttype, acc=AMsymbols[i].acc,
-      }
-    end
-  end
-  refreshSymbols()
-end
 
 local function refreshSymbols()
   table.sort(AMsymbols, function(s1,s2)
@@ -420,6 +508,25 @@ local function refreshSymbols()
   end
 end
 
+local function initSymbols()
+  local symlen = #AMsymbols
+  for i=1,symlen do
+    if AMsymbols[i].tex then
+      AMsymbols[#AMsymbols+1] = {
+        input=AMsymbols[i].tex, tag=AMsymbols[i].tag, output=AMsymbols[i].output, ttype=AMsymbols[i].ttype, acc=AMsymbols[i].acc,
+      }
+    end
+  end
+  refreshSymbols()
+end
+
+function asciimath.init()
+  -- var msg, warnings = new Array()
+  if not noMathML then initSymbols() end
+  return true
+end
+
+
 local function define(oldstr,newstr)
   AMsymbols[#AMsymbols+1] = {input=oldstr, tag="mo", output=newstr, tex=nil, ttype=DEFINITION}
   refreshSymbols() -- this may be a problem if many symbols are defined!
@@ -427,13 +534,16 @@ end
 
 --remove n characters and any following blanks
 local function AMremoveCharsAndBlanks(str,n)
-  error 'NIY'
-  -- var st;
-  -- if (str.charAt(n)=="\\" && str.charAt(n+1)!="\\" && str.charAt(n+1)!=" ") 
-  --   st = str.slice(n+1);
-  -- else st = str.slice(n);
-  -- for (var i=0; i<st.length && st.charCodeAt(i)<=32; i=i+1);
-  -- return st.slice(i);
+  local st = str:sub(n+1)
+  if st:sub(1,1)=='\\' and st:sub(2,2)~='\\' and st:sub(2,2)~=' ' then
+    st = st:sub(2)
+  end
+  for i = 1, #st do
+    if st:sub(i,i):byte() > 32 then
+      return st:sub(i)
+    end
+  end
+  return ''
 end
 
 -- return position >=n where str appears or would be inserted
@@ -926,17 +1036,17 @@ local function AMparseExpr(str, rightbracket)
   return newFrag, str
 end
 
-local function parseMath(str, latex)
+function asciimath.parseMath(str, latex)
   local frag, node
   AMnestingDepth = 0
   -- some basic cleanup for dealing with stuff editors like TinyMCE adds
-  str = str:gsub('&nbsp;', '')
-  str = str:gsub('&gt;', '>')
-  str = str:gsub('&lt;', '<')
+  str = string.gsub(str, '&nbsp;', '')
+  str = string.gsub(str, '&gt;', '>')
+  str = string.gsub(str, '&lt;', '<')
   for _,f in ipairs{'Sin', 'Cos', 'Tan', 'Arcsin', 'Arccos', 'Arctan', 'Sinh', 'Cosh', 'Tanh', 'Cot', 'Sec', 'Csc', 'Log', 'Ln', 'Abs'} do
-    str = str:gsub(f, f:lower())
+    str = string.gsub(str, f, f:lower())
   end
-  frag = {AMparseExpr(str:gsub('^%s+', ''), false)}[1]
+  frag = ({AMparseExpr(string.gsub(str, '^%s+', ''), false)})[1]
   node = createMmlNode('mstyle', frag)
   if mathcolor ~= '' then
     node.setAttribute('mathcolor', mathcolor)
@@ -949,7 +1059,7 @@ local function parseMath(str, latex)
   end
   node = createMmlNode('math', node)
   if showasciiformulaonhover then  -- fixed by djhsu so newline
-    node.setAttribute('title', str:gsub('%s+', ' '))  -- does not show in Gecko
+    node.setAttribute('title', string.gsub(str, '%s+', ' '))  -- does not show in Gecko
   end
   return node
 end
