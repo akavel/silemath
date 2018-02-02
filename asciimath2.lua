@@ -886,7 +886,7 @@ local function AMparseIexpr(str)
       sym2 = AMgetSymbol(str)
       if sym2.input == '^' then
         str = AMremoveCharsAndBlanks(str, #sym2.input)
-        local res2 = AMparseSexpr(str)
+        local res2 = {AMparseSexpr(str)}
         AMremoveBrackets(res2[1])
         str = res2[2]
         if underover then
