@@ -199,19 +199,19 @@ local document = {
 }
 
 local function createElementXHTML(t)
-  return document.createElementNS("http://www.w3.org/1999/xhtml",t)
+  return document:createElementNS("http://www.w3.org/1999/xhtml",t)
 end
 
 local AMmathml = "http://www.w3.org/1998/Math/MathML"
 
 local function AMcreateElementMathML(t)
-  return document.createElementNS(AMmathml,t)
+  return document:createElementNS(AMmathml,t)
 end
 
 local function createMmlNode(t,frag)
   local node;
-  node = document.createElementNS(AMmathml,t)
-  if frag then node.appendChild(frag) end
+  node = document:createElementNS(AMmathml,t)
+  if frag then node:appendChild(frag) end
   return node
 end
 
@@ -627,17 +627,17 @@ end
 
 local function AMremoveBrackets(node)
   local st
-  if not node.hasChildNodes() then return end
-  if node.firstChild.hasChildNodes() and (node.nodeName=='mrow' or node.nodeName=='M:MROW') then
+  if not node:hasChildNodes() then return end
+  if node.firstChild:hasChildNodes() and (node.nodeName=='mrow' or node.nodeName=='M:MROW') then
     st = node.firstChild.firstChild.nodeValue
     if st=='(' or st=='[' or st=='{' then
-      node.removeChild(node.firstChild)
+      node:removeChild(node.firstChild)
     end
   end
-  if node.lastChild.hasChildNodes() and (node.nodeName=='mrow' or node.nodeName=='M:MROW') then
+  if node.lastChild:hasChildNodes() and (node.nodeName=='mrow' or node.nodeName=='M:MROW') then
     st = node.lastChild.firstChild.nodeValue
     if st==')' or st==']' or st=='}' then
-      node.removeChild(node.lastChild)
+      node:removeChild(node.lastChild)
     end
   end
 end
@@ -660,7 +660,7 @@ local AMnestingDepth, AMpreviousSymbol, AMcurrentSymbol
 -- parses str and returns (node,tailstr)
 function AMparseSexpr(str)
   local symbol, node, result, i, st
-  local newFrag = document.createDocumentFragment()
+  local newFrag = document:createDocumentFragment()
   str = AMremoveCharsAndBlanks(str, 0)
   symbol = AMgetSymbol(str)  -- either a token or a bracket or empty
   if symbol == nil or symbol.ttype == RIGHTBRACKET and AMnestingDepth > 0 then
@@ -674,7 +674,7 @@ function AMparseSexpr(str)
   if case==UNDEROVER or case==CONST then
     str = AMremoveCharsAndBlanks(str, #symbol.input)
     return createMmlNode(symbol.tag,  -- its a constant
-                         document.createTextNode(symbol.output)), str
+                         document:createTextNode(symbol.output)), str
   elseif case==LEFTBRACKET then  -- read (expr+)
     AMnestingDepth = AMnestingDepth + 1
     str = AMremoveCharsAndBlanks(str, #symbol.input)
@@ -683,9 +683,9 @@ function AMparseSexpr(str)
     if type(symbol.invisible) == 'boolean' and symbol.invisible then
       node = createMmlNode('mrow', result[1])
     else
-      node = createMmlNode('mo', document.createTextNode(symbol.output))
+      node = createMmlNode('mo', document:createTextNode(symbol.output))
       node = createMmlNode('mrow', node)
-      node.appendChild(result[1])
+      node:appendChild(result[1])
     end
     return node, result[2]
   elseif case==TEXT then
@@ -709,15 +709,15 @@ function AMparseSexpr(str)
     st = str:sub(2,i-1)
     if st:sub(1,1) == ' ' then
       node = createMmlNode('mspace')
-      node.setAttribute('width', '1ex')
-      newFrag.appendChild(node)
+      node:setAttribute('width', '1ex')
+      newFrag:appendChild(node)
     end
-    newFrag.appendChild(
-      createMmlNode(symbol.tag, document.createTextNode(st)))
+    newFrag:appendChild(
+      createMmlNode(symbol.tag, document:createTextNode(st)))
     if st:sub(-1) == ' ' then
       node = createMmlNode('mspace')
-      node.setAttribute('width', '1ex')
-      newFrag.appendChild(node)
+      node:setAttribute('width', '1ex')
+      newFrag:appendChild(node)
     end
     str = AMremoveCharsAndBlanks(str, i+1)
     return createMmlNode('mrow', newFrag), str
@@ -726,18 +726,18 @@ function AMparseSexpr(str)
     result = {AMparseSexpr(str)}
     if result[1] == nil then
       return createMmlNode(symbol.tag,
-        document.createTextNode(symbol.output)), str
+        document:createTextNode(symbol.output)), str
     end
     if type(symbol.func)=='boolean' and symbol.func then  -- functions hack
       st = str:sub(1,1)
       if st=='^' or st=='_' or st=='/' or st=='|' or st==',' or
         (#symbol.input==1 and symbol.input:match('%w') and st~='(') then
         return createMmlNode(symbol.tag,
-          document.createTextNode(symbol.output)), str
+          document:createTextNode(symbol.output)), str
       else
         node = createMmlNode('mrow',
-          createMmlNode(symbol.tag, document.createTextNode(symbol.output)))
-        node.appendChild(result[1])
+          createMmlNode(symbol.tag, document:createTextNode(symbol.output)))
+        node:appendChild(result[1])
         return node, result[2]
       end
     end
@@ -745,17 +745,17 @@ function AMparseSexpr(str)
     if symbol.input == 'sqrt' then  -- sqrt
       return createMmlNode(symbol.tag, result[1]), result[2]
     elseif type(symbol.rewriteleftright) ~= 'nil' then  -- abs, floor, ceil
-      node = createMmlNode('mrow', createMmlNode('mo', document.createTextNode(symbol.rewriteleftright[1])))
-      node.appendChild(result[1])
-      node.appendChild(createMmlNode('mo', document.createTextNode(symbol.rewriteleftright[2])))
+      node = createMmlNode('mrow', createMmlNode('mo', document:createTextNode(symbol.rewriteleftright[1])))
+      node:appendChild(result[1])
+      node:appendChild(createMmlNode('mo', document:createTextNode(symbol.rewriteleftright[2])))
       return node, result[2]
     elseif symbol.input == 'cancel' then  -- cancel
       node = createMmlNode(symbol.tag, result[1])
-      node.setAttribute('notation', 'updiagonalstrike')
+      node:setAttribute('notation', 'updiagonalstrike')
       return node, result[2]
     elseif type(symbol.acc) == 'boolean' and symbol.acc then  -- accent
       node = createMmlNode(symbol.tag, result[1])
-      node.appendChild(createMmlNode('mo', document.createTextNode(symbol.output)))
+      node:appendChild(createMmlNode('mo', document:createTextNode(symbol.output)))
       return node, result[2]
     else  -- font change command
       if type(symbol.codes) ~= 'nil' then
@@ -778,18 +778,18 @@ function AMparseSexpr(str)
               end
             end
             if result[1].nodeName == 'mi' then
-              result[1] = createMmlNode('mo').
-                appendChild(document.createTextNode(newst))
+              result[1] = createMmlNode('mo'):
+                appendChild(document:createTextNode(newst))
             else
-              result[1].replaceChild(createMmlNode('mo').
-                appendChild(document.createTextNode(newst)),
+              result[1]:replaceChild(createMmlNode('mo'):
+                appendChild(document:createTextNode(newst)),
                 result[1].childNodes[i])
             end
           end
         end
       end
       node = createMmlNode(symbol.tag, result[1])
-      node.setAttribute(symbol.atname, symbol.atval)
+      node:setAttribute(symbol.atname, symbol.atval)
       return node, result[2]
     end
   elseif case==BINARY then
@@ -797,13 +797,13 @@ function AMparseSexpr(str)
     result = {AMparseSexpr(str)}
     if result[1]==nil then
       return createMmlNode('mo',
-        document.createTextNode(symbol.input)), str
+        document:createTextNode(symbol.input)), str
     end
     AMremoveBrackets(result[1])
     local result2 = {AMparseSexpr(result[2])}
     if result2[1]==nil then
       return createMmlNode('mo',
-        document.createTextNode(symbol.input)), str
+        document:createTextNode(symbol.input)), str
     end
     AMremoveBrackets(result2[1])
     if symbol.input == 'color' then
@@ -813,30 +813,30 @@ function AMparseSexpr(str)
       end
       st = str:sub(2,i)
       node = createMmlNode(symbol.tag, result2[1])
-      node.setAttribute('mathcolor', st)
+      node:setAttribute('mathcolor', st)
       return node, result2[2]
     end
     if symbol.input == 'root' or symbol.output == 'stackrel' then
-      newFrag.appendChild(result2[1])
+      newFrag:appendChild(result2[1])
     end
-    newFrag.appendChild(result[1])
+    newFrag:appendChild(result[1])
     if symbol.input == 'frac' then
-      newFrag.appendChild(result2[1])
+      newFrag:appendChild(result2[1])
     end
     return createMmlNode(symbol.tag, newFrag), result2[2]
   elseif case==INFIX then
     str = AMremoveCharsAndBlanks(str, #symbol.input)
-    return createMmlNode('mo', document.createTextNode(symbol.output)), str
+    return createMmlNode('mo', document:createTextNode(symbol.output)), str
   elseif case==SPACE then
     str = AMremoveCharsAndBlanks(str, #symbol.input)
     node = createMmlNode('mspace')
-    node.setAttribute('width', '1ex')
-    newFrag.appendChild(node)
-    newFrag.appendChild(
-      createMmlNode(symbol.tag, document.createTextNode(symbol.output)))
+    node:setAttribute('width', '1ex')
+    newFrag:appendChild(node)
+    newFrag:appendChild(
+      createMmlNode(symbol.tag, document:createTextNode(symbol.output)))
     node = createMmlNode('mspace')
-    node.setAttribute('width', '1ex')
-    newFrag.appendChild(node)
+    node:setAttribute('width', '1ex')
+    newFrag:appendChild(node)
     return createMmlNode('mrow', newFrag), str
   elseif case==LEFTRIGHT then
     AMnestingDepth = AMnestingDepth + 1
@@ -848,19 +848,19 @@ function AMparseSexpr(str)
       st = result[1].lastChild.firstChild.nodeValue
     end
     if st == '|' then  -- its an absolute value subterm
-      node = createMmlNode('mo', document.createTextNode(symbol.output))
+      node = createMmlNode('mo', document:createTextNode(symbol.output))
       node = createMmlNode('mrow', node)
-      node.appendChild(result[1])
+      node:appendChild(result[1])
       return node, result[2]
     else  -- the '|' is a \mid so use unicode 2223 (divides) for spacing
-      node = createMmlNode('mo', document.createTextNode('\226\136\163'))
+      node = createMmlNode('mo', document:createTextNode('\226\136\163'))
       node = createMmlNode('mrow', node)
       return node, str
     end
   else  -- default
     str = AMremoveCharsAndBlanks(str, #symbol.input)
     return createMmlNode(symbol.tag,  -- its a constant
-                         document.createTextNode(symbol.output)), str
+                         document:createTextNode(symbol.output)), str
   end
 end
 
@@ -876,7 +876,7 @@ local function AMparseIexpr(str)
     str = AMremoveCharsAndBlanks(str, #symbol.input)
     result = {AMparseSexpr(str)}
     if result[1] == nil then  -- show box in place of missing argument
-      result[1] = createMmlNode('mo', document.createTextNode('\226\150\161'))
+      result[1] = createMmlNode('mo', document:createTextNode('\226\150\161'))
     else
       AMremoveBrackets(result[1])
     end
@@ -894,8 +894,8 @@ local function AMparseIexpr(str)
         else
           node = createMmlNode('msubsup', node)
         end
-        node.appendChild(result[1])
-        node.appendChild(res2[1])
+        node:appendChild(result[1])
+        node:appendChild(res2[1])
         node = createMmlNode('mrow', node)  -- so sum does not stretch
       else
         if underover then
@@ -903,21 +903,21 @@ local function AMparseIexpr(str)
         else
           node = createMmlNode('msub', node)
         end
-        node.appendChild(result[1])
+        node:appendChild(result[1])
       end
     elseif symbol.input == '^' and underover then
       node = createMmlNode('mover', node)
-      node.appendChild(result[1])
+      node:appendChild(result[1])
     else
       node = createMmlNode(symbol.tag, node)
-      node.appendChild(result[1])
+      node:appendChild(result[1])
     end
     if type(sym1.func)~='nil' and sym1.func then
       sym2 = AMgetSymbol(str)
       if sym2.ttype ~= INFIX and sym2.ttype ~= RIGHTBRACKET then
         result = {AMparseIexpr(str)}
         node = createMmlNode('mrow', node)
-        node.appendChild(result[1])
+        node:appendChild(result[1])
         str = result[2]
       end
     end
@@ -927,7 +927,7 @@ end
 
 local function AMparseExpr(str, rightbracket)
   local symbol, node, result, i
-  newFrag = document.createDocumentFragment()
+  newFrag = document:createDocumentFragment()
   repeat
     str = AMremoveCharsAndBlanks(str, 0)
     result = {AMparseIexpr(str)}
@@ -938,18 +938,18 @@ local function AMparseExpr(str, rightbracket)
       str = AMremoveCharsAndBlanks(str, #symbol.input)
       result = {AMparseIexpr(str)}
       if result[1] == nil then  -- show box in place of missing argument
-        result[1] = createMmlNode('mo', document.createTextNode('\226\150\161'))
+        result[1] = createMmlNode('mo', document:createTextNode('\226\150\161'))
       else
         AMremoveBrackets(result[1])
       end
       str = result[2]
       AMremoveBrackets(node)
       node = createMmlNode(symbol.tag, node)
-      node.appendChild(result[1])
-      newFrag.appendChild(node)
+      node:appendChild(result[1])
+      newFrag:appendChild(node)
       symbol = AMgetSymbol(str)
     elseif node~=nil then
-      newFrag.appendChild(node)
+      newFrag:appendChild(node)
     end
   until not ((symbol.ttype ~= RIGHTBRACKET and
            (symbol.ttype ~= LEFTRIGHT or rightbracket)
@@ -993,44 +993,44 @@ local function AMparseExpr(str, rightbracket)
           matrix = matrix and (#pos>1 or #pos[1]>0)
           if matrix then
             local row, frag, n, k, table
-            table = document.createDocumentFragment()
+            table = document:createDocumentFragment()
             local i = 1
             while i<=m do
-              row = document.createDocumentFragment()
-              frag = document.createDocumentFragment()
+              row = document:createDocumentFragment()
+              frag = document:createDocumentFragment()
               node = newFrag.firstChild  -- <mrow>(-,-,...,-,-)</mrow>
               n = #node.childNodes
               k = 1
               for j = 2, n-1 do
                 if type(pos[i][k]) ~= 'nil' and j==pos[i][k] then
-                  node.removeChild(node.firstChild)  -- remove ,
-                  row.appendChild(createMmlNode('mtd', frag))
+                  node:removeChild(node.firstChild)  -- remove ,
+                  row:appendChild(createMmlNode('mtd', frag))
                   k = k + 1
                 else
-                  frag.appendChild(node.firstChild)
+                  frag:appendChild(node.firstChild)
                 end
               end
-              row.appendChild(createMmlNode('mtd', frag))
+              row:appendChild(createMmlNode('mtd', frag))
               if #newFrag.childNodes > 2 then
-                newFrag.removeChild(newFrag.firstChild)  -- remove <mrow>)</mrow>
-                newFrag.removeChild(newFrag.firstChild)  -- remove <mo>,</mo>
+                newFrag:removeChild(newFrag.firstChild)  -- remove <mrow>)</mrow>
+                newFrag:removeChild(newFrag.firstChild)  -- remove <mo>,</mo>
               end
-              table.appendChild(createMmlNode('mtr', row))
+              table:appendChild(createMmlNode('mtr', row))
               i = i+2
             end
             node = createMmlNode('mtable', table)
             if type(symbol.invisible) == 'boolean' and symbol.invisible then
-              node.setAttribute('columnalign', 'left')
+              node:setAttribute('columnalign', 'left')
             end
-            newFrag.replaceChild(node, newFrag.firstChild)
+            newFrag:replaceChild(node, newFrag.firstChild)
           end
         end
       end
     end
     str = AMremoveCharsAndBlanks(str, #symbol.input)
     if type(symbol.invisible) ~= 'boolean' or not symbol.invisible then
-      node = createMmlNode('mo', document.createTextNode(symbol.output))
-      newFrag.appendChild(node)
+      node = createMmlNode('mo', document:createTextNode(symbol.output))
+      newFrag:appendChild(node)
     end
   end
   return newFrag, str
@@ -1049,17 +1049,17 @@ function asciimath.parseMath(str, latex)
   frag = ({AMparseExpr(string.gsub(str, '^%s+', ''), false)})[1]
   node = createMmlNode('mstyle', frag)
   if mathcolor ~= '' then
-    node.setAttribute('mathcolor', mathcolor)
+    node:setAttribute('mathcolor', mathcolor)
   end
   if mathfontfamily ~= '' then
-    node.setAttribute('fontfamily', mathfontfamily)
+    node:setAttribute('fontfamily', mathfontfamily)
   end
   if displaystyle then
-    node.setAttribute('displaystyle', 'true')
+    node:setAttribute('displaystyle', 'true')
   end
   node = createMmlNode('math', node)
   if showasciiformulaonhover then  -- fixed by djhsu so newline
-    node.setAttribute('title', string.gsub(str, '%s+', ' '))  -- does not show in Gecko
+    node:setAttribute('title', string.gsub(str, '%s+', ' '))  -- does not show in Gecko
   end
   return node
 end
