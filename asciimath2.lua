@@ -60,14 +60,34 @@ function asciimath.init()
 end
 
 local function charAt(str, i)
+  -- FIXME(akavel): test this for correctness
   -- FIXME(akavel): for example, charAt('ż', 1) == 'ż'
   -- FIXME(akavel): for example, charAt('żółć', 3) == 'ł'
-  error 'FIXME(akavel): get rune at position i in UTF-8 string'
+  -- Based on http://lua-users.org/wiki/LuaUnicode
+  for uchar in string.gmatch(str, "([%z\1-\127\194-\244][\128-\191]*)") do
+    i = i-1
+    if i <= 0 then
+      return uchar
+    end
+  end
 end
 
-local function charAt(str, i)
-  -- FIXME(akavel): for example, charAt('ż', 1) == 380
-  error 'FIXME(akavel): get code of rune at position i in UTF-8 string'
+local function charCodeAt(str, i)
+  -- FIXME(akavel): test this for correctness
+  -- FIXME(akavel): for example, charCodeAt('ż', 1) == 380
+  -- Based on http://lua-users.org/wiki/LuaUnicode
+  local uchar = charAt(str, i)
+  local c = uchar:byte()
+  local len = c<0x80 and 1 or
+    c<0xe0 and 2 or
+    c<0xf0 and 3 or
+    c<0xf8 and 4 or
+    error('invalid UTF-8 character sequence: '..uchar)
+  local code = c % (2^(8-len))
+  for i = 2, #uchar do
+    code = (code*0x40) + (uchar:byte(i) % 0x40)
+  end
+  return code
 end
 
 local function translate(spanclassAM)
