@@ -813,7 +813,7 @@ function AMparseSexpr(str)
       elseif str:sub(1,1)=='(' then i=str:find(')', 1, true)
       elseif str:sub(1,1)=='[' then i=str:find(']', 1, true)
       end
-      st = str:sub(2,i)
+      st = str:sub(2,i-1)
       node = createMmlNode(symbol.tag, result2[1])
       node:setAttribute('mathcolor', st)
       return node, result2[2]
