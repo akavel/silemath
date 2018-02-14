@@ -50,6 +50,8 @@ local fixphi = true;             --false to return to legacy phi/varphi mapping
 
 --++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+local AMparseExpr
+
 local isIE = false;
 local noMathML, translated = false, false;
 
@@ -670,7 +672,7 @@ function AMparseSexpr(str)
     str = symbol.output .. AMremoveCharsAndBlanks(str, #symbol.input)
     symbol = AMgetSymbol(str)
   end
-  local case = symbol.tttype
+  local case = symbol.ttype
   if case==UNDEROVER or case==CONST then
     str = AMremoveCharsAndBlanks(str, #symbol.input)
     return createMmlNode(symbol.tag,  -- its a constant
@@ -925,7 +927,7 @@ local function AMparseIexpr(str)
   return node, str
 end
 
-local function AMparseExpr(str, rightbracket)
+function AMparseExpr(str, rightbracket)
   local symbol, node, result, i
   newFrag = document:createDocumentFragment()
   repeat
