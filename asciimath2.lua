@@ -159,7 +159,7 @@ local Tag = function(self, name)
     toxml = function(self)
       if self._fragment then
         local t = {}
-        for _,ch in ipairs(self.childs) do
+        for _,ch in ipairs(self.childs or {}) do
           t[#t+1] = string.format("< %s >", toxml(ch))
         end
         return table.concat(t, '')
@@ -1005,6 +1005,7 @@ function AMparseExpr(str, rightbracket)
               node = newFrag.firstChild  -- <mrow>(-,-,...,-,-)</mrow>
               n = #node.childNodes
               k = 1
+              node:removeChild(node.firstChild)  -- remove (
               for j = 2, n-1 do
                 if type(pos[i][k]) ~= 'nil' and j==pos[i][k] then
                   node:removeChild(node.firstChild)  -- remove ,
