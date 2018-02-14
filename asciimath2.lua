@@ -973,14 +973,15 @@ function AMparseExpr(str, rightbracket)
           local m = #newFrag.childNodes
           local i = 1
           while matrix and i<=m do
+            pos[i-1] = {}  -- NOTE(akavel): required for #pos to work OK in Lua
             pos[i] = {}
             node = newFrag.childNodes[i]
             if matrix then
               matrix = node.nodeName=='mrow' and
-              (i==m or node.nextSibling.nodeName=='mo' and
-                node.nextSibling.firstChild.nodeValue==',') and
-              node.firstChild.firstChild.nodeValue==left and
-              node.lastChild.firstChild.nodeValue==right
+                (i==m or node.nextSibling.nodeName=='mo' and
+                  node.nextSibling.firstChild.nodeValue==',') and
+                node.firstChild.firstChild.nodeValue==left and
+                node.lastChild.firstChild.nodeValue==right
             end
             if matrix then
               for j = 1, #node.childNodes do
