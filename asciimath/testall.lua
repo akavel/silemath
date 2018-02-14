@@ -438,124 +438,8 @@ cases = {
 {input="lim_(x rarr 2^-) f(x)", output="<munder><mo>lim</mo><mrow><mi>x</mi><mo>→</mo><msup><mn>2</mn><mo>-</mo></msup></mrow></munder><mrow><mi>f</mi><mrow><mo>(</mo><mi>x</mi><mo>)</mo></mrow></mrow>"},
 }
 
-local asciimath = assert(loadfile 'asciimath.lua')()
--- TODO: [LATER] drop dependency on LGPL castl.runtime
-
-local env = require 'castl.runtime'
-env.document = {
-  createElementNS = function(self, namespace, tag)
-    return setmetatable({tag = tag}, {__index = Tag})
-  end,
-  createDocumentFragment = function(self)
-    return setmetatable({_fragment = true}, {__index = Tag})
-  end,
-  createTextNode = function(self, text)
-    text = string.gsub(text, '.', {
-      [' '] = '&nbsp;',
-      ['<'] = '&lt;',
-      ['>'] = '&gt;',
-      ['&'] = '&amp;',
-      -- TODO(akavel): '"' and "'" ?
-    })
-    return setmetatable({text = text}, {__index = function(self, name)
-      if name == 'hasChildNodes' then
-        return function() return false end
-      elseif name == 'nodeName' then
-        return '#text'
-      elseif name == 'nodeValue' then
-        return self.text
-      elseif name == '_fragment' then
-        return false
-      elseif name == 'parent' then
-        return nil  -- if non nil, then __index wouldn't even be called
-      end
-      error(debug.traceback("tried to access string's method: "..name, 2))
-    end})
-  end,
-  printf = function(_, fmt, ...) print(string.format(fmt, ...)) end,
-}
-Tag = function(self, name)
-  if name == 'childNodes' then
-    return setmetatable({_childs = self.childs}, {__index = function(self, name)
-      if name == 'length' then
-        return self._childs and #self._childs or 0
-      elseif type(name)=='number' then
-        return self._childs[name+1]
-      end
-    end})
-  elseif name == 'nodeName' then
-    return self.tag
-  elseif name == 'firstChild' then
-    return (self.childs or {})[1]  -- TODO: is this ok?
-  elseif name == 'lastChild' then
-    return self.childs[#self.childs]  -- TODO: is this ok?
-  elseif name == 'nextSibling' then
-    if not self.parent then error('no parent') end
-    for i,ch in ipairs(self.parent.childs) do
-      if ch==self then
-        return self.parent.childs[i+1]
-      end
-    end
-  end
-  local funcs = {
-    appendChild = function(self, child)
-      if child._fragment then
-        while child.childs do
-          self:appendChild(child:removeChild(child.childs[1]))
-        end
-      else
-        if child.parent then child.parent:removeChild(child) end
-        if not self.childs then self.childs = {} end
-        child.parent = self
-        self.childs[#self.childs+1] = child
-      end
-      return child
-    end,
-    replaceChild = function(self, new, old)
-      if new._fragment then
-        error("NIY: replaceChild using document-fragment")
-      end
-      for i,ch in ipairs(self.childs or {}) do
-        if ch==old then
-          self.childs[i] = new
-          new.parent = self
-          old.parent = nil
-          return old
-        end
-      end
-    end,
-    setAttribute = function(self, name, value)
-      if not self.attrs then self.attrs = {} end
-      self.attrs[name] = value
-    end,
-    hasChildNodes = function(self)
-      return self.childs and true or false
-    end,
-    removeChild = function(self, cut)
-      for i,ch in ipairs(self.childs) do
-        if ch==cut then
-          table.remove(self.childs, i)
-          if #self.childs==0 then
-            self.childs = nil
-          end
-          cut.parent = nil
-          return cut
-        end
-      end
-    end,
-    toxml = function(self)
-      if self._fragment then
-        local t = {}
-        for _,ch in ipairs(self.childs) do
-          t[#t+1] = string.format("< %s >", toxml(ch))
-        end
-        return table.concat(t, '')
-      end
-      return toxml(self)
-    end,
-  }
-  return funcs[name]
-end
+local asciimath = require 'asciimath'
+-- local asciimath = assert(loadfile 'asciimath.lua')()
 
 function toxml(tabl, buf0)
   local buf = buf0 or setmetatable({}, {__call = function(self, fmt, ...)
@@ -595,7 +479,7 @@ asciimath.init()
 
 for _, case in ipairs(cases) do
   local ok, err = xpcall(function()
-    local res = asciimath:parseMath(case.input)
+    local res = asciimath.parseMath(case.input)
     while res.tag~='mstyle' do
       res = res.childs[1]
     end
