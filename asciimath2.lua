@@ -87,13 +87,15 @@ local function charCodeAt(str, i)
 end
 local Tag = function(self, name)
   if name == 'childNodes' then
-    return setmetatable({_childs = self.childs}, {__index = function(self, name)
-      if name == 'length' then
-        return self._childs and #self._childs or 0
-      elseif type(name)=='number' then
-        return self._childs[name+1]
-      end
-    end})
+    return setmetatable({_childs = self.childs}, {
+      __len = function(self)
+          return self._childs and #self._childs or 0
+      end,
+      __index = function(self, name)
+        if type(name)=='number' then
+          return self._childs[name]
+        end
+      end})
   elseif name == 'nodeName' then
     return self.tag
   elseif name == 'firstChild' then
@@ -768,7 +770,7 @@ function AMparseSexpr(str)
             else
               st = result[1].childNodes[i].firstChild.nodeValue
             end
-            local newst = {}
+            local newst = ''
             for j = 1, #st do
               -- FIXME(akavel): make sure below works ok for UTF-8 chars...
               if charCodeAt(st, j)>64 and charCodeAt(st, j)<91 then
