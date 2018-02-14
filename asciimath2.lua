@@ -52,6 +52,17 @@ local fixphi = true;             --false to return to legacy phi/varphi mapping
 
 local AMparseExpr
 
+local function DEBUG(fmt, ...)
+  -- local indent = string.rep('  ', #debug.traceback():gsub('[^\n]','')-3)
+  -- local line = string.format('% 4d ', debug.getinfo(3, 'l').currentline)
+  -- print(indent..line..string.format(fmt, ...))
+end
+local function DEBUG0(fmt, ...)
+  -- local indent = string.rep('  ', #debug.traceback():gsub('[^\n]','')-2)
+  -- local line = string.format('% 4d ', debug.getinfo(2, 'l').currentline)
+  -- print(indent..line..string.format(fmt, ...))
+end
+
 local isIE = false;
 local noMathML, translated = false, false;
 
@@ -538,6 +549,7 @@ end
 
 --remove n characters and any following blanks
 local function AMremoveCharsAndBlanks(str,n)
+  -- DEBUG('AMremoveCharsAndBlanks(%q, %q)', str,n)
   local st = str:sub(n+1)
   if st:sub(1,1)=='\\' and st:sub(2,2)~='\\' and st:sub(2,2)~=' ' then
     st = st:sub(2)
@@ -566,6 +578,7 @@ end
 -- return maximal initial substring of str that appears in names
 -- return null if there is none
 local function AMgetSymbol(str)
+  DEBUG('AMgetSymbol(%q)', str)
   local k = 1  -- new pos
   local j = 1  -- old pos
   local mk  -- match pos
@@ -630,6 +643,7 @@ local function AMgetSymbol(str)
 end
 
 local function AMremoveBrackets(node)
+  DEBUG('AMremoveBrackets %s', toxml(node))
   local st
   if not node:hasChildNodes() then return end
   if node.firstChild:hasChildNodes() and (node.nodeName=='mrow' or node.nodeName=='M:MROW') then
@@ -644,6 +658,7 @@ local function AMremoveBrackets(node)
       node:removeChild(node.lastChild)
     end
   end
+  DEBUG0('removed: '..toxml(node))
 end
 
 --[[
@@ -663,6 +678,7 @@ local AMnestingDepth, AMpreviousSymbol, AMcurrentSymbol
 
 -- parses str and returns (node,tailstr)
 function AMparseSexpr(str)
+  DEBUG('AMparseSexpr(%q)', str)
   local symbol, node, result, i, st
   local newFrag = document:createDocumentFragment()
   str = AMremoveCharsAndBlanks(str, 0)
@@ -691,6 +707,7 @@ function AMparseSexpr(str)
       node = createMmlNode('mrow', node)
       node:appendChild(result[1])
     end
+    DEBUG0('ret %s, %q', toxml(node), result[2])
     return node, result[2]
   elseif case==TEXT then
     if symbol~=AMquote then
@@ -764,6 +781,8 @@ function AMparseSexpr(str)
       return node, result[2]
     else  -- font change command
       if type(symbol.codes) ~= 'nil' then
+        DEBUG0('codes; '..toxml(result[1]))
+        DEBUG0('imax=%d',#result[1].childNodes)
         for i = 1, #result[1].childNodes do
           if result[1].childNodes[i].nodeName == 'mi' or result[1].nodeName == 'mi' then
             if result[1].nodeName == 'mi' then
@@ -771,6 +790,7 @@ function AMparseSexpr(str)
             else
               st = result[1].childNodes[i].firstChild.nodeValue
             end
+            DEBUG0('st=%q',st)
             local newst = ''
             for j = 1, #st do
               -- FIXME(akavel): make sure below works ok for UTF-8 chars...
@@ -870,6 +890,7 @@ function AMparseSexpr(str)
 end
 
 local function AMparseIexpr(str)
+  DEBUG('AMparseIexpr(%q)', str)
   local symbol, sym1, sym2, node, result, underover
   str = AMremoveCharsAndBlanks(str, 0)
   sym1 = AMgetSymbol(str)
@@ -931,6 +952,7 @@ local function AMparseIexpr(str)
 end
 
 function AMparseExpr(str, rightbracket)
+  DEBUG('AMparseExpr(%q, %q)', str, tostring(rightbracket))
   local symbol, node, result, i, newFrag
   newFrag = document:createDocumentFragment()
   repeat
@@ -956,6 +978,7 @@ function AMparseExpr(str, rightbracket)
     elseif node~=nil then
       newFrag:appendChild(node)
     end
+    DEBUG0('newFrag: '..newFrag:toxml())
   until not ((symbol.ttype ~= RIGHTBRACKET and
            (symbol.ttype ~= LEFTRIGHT or rightbracket)
            or AMnestingDepth == 0) and symbol~=nil and symbol.output~="")
@@ -964,6 +987,7 @@ function AMparseExpr(str, rightbracket)
     if len>0 and newFrag.childNodes[len].nodeName == 'mrow'
       and newFrag.childNodes[len].lastChild
       and newFrag.childNodes[len].lastChild.firstChild then  -- matrix
+      DEBUG0('matrix1')
       local right = newFrag.childNodes[len].lastChild.firstChild.nodeValue
       if right==')' or right==']' then
         local left = newFrag.childNodes[len].firstChild.firstChild.nodeValue
@@ -976,6 +1000,7 @@ function AMparseExpr(str, rightbracket)
           while matrix and i<=m do
             pos[i-1] = {}  -- NOTE(akavel): required for #pos to work OK in Lua
             pos[i] = {}
+            DEBUG0('pos[%d] = {}', i)
             node = newFrag.childNodes[i]
             if matrix then
               matrix = node.nodeName=='mrow' and
@@ -984,10 +1009,12 @@ function AMparseExpr(str, rightbracket)
                 node.firstChild.firstChild.nodeValue==left and
                 node.lastChild.firstChild.nodeValue==right
             end
+            DEBUG0('matrix2='..tostring(matrix))
             if matrix then
               for j = 1, #node.childNodes do
                 if node.childNodes[j].firstChild.nodeValue==',' then
                   pos[i][#pos[i]+1] = j
+                  DEBUG0('pos[%d][%d] = %d', i, #pos[i], j)
                 end
               end
             end
@@ -1010,7 +1037,9 @@ function AMparseExpr(str, rightbracket)
               node:removeChild(node.firstChild)  -- remove (
               for j = 2, n-1 do
                 if type(pos[i][k]) ~= 'nil' and j==pos[i][k] then
+                  DEBUG0('pre  rm , '..toxml(node))
                   node:removeChild(node.firstChild)  -- remove ,
+                  DEBUG0('post rm , '..toxml(node))
                   row:appendChild(createMmlNode('mtd', frag))
                   k = k + 1
                 else
@@ -1019,13 +1048,16 @@ function AMparseExpr(str, rightbracket)
               end
               row:appendChild(createMmlNode('mtd', frag))
               if #newFrag.childNodes > 2 then
+                DEBUG0('pre  rm '..toxml(newFrag))
                 newFrag:removeChild(newFrag.firstChild)  -- remove <mrow>)</mrow>
                 newFrag:removeChild(newFrag.firstChild)  -- remove <mo>,</mo>
+                DEBUG0('post rm '..toxml(newFrag))
               end
               table:appendChild(createMmlNode('mtr', row))
               i = i+2
             end
             node = createMmlNode('mtable', table)
+            DEBUG0('creating <table>...')
             if type(symbol.invisible) == 'boolean' and symbol.invisible then
               node:setAttribute('columnalign', 'left')
             end

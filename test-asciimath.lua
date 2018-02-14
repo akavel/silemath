@@ -474,8 +474,8 @@ end
 
 asciimath.init()
 
---io.write(toxml(asciimath:parseMath '[(1,2),(3,4)]'))
---os.exit(1)
+-- io.write(toxml(asciimath.parseMath 'stackrel\"def\"= or \\stackrel{\\Delta}{=}'))
+-- os.exit(1)
 
 for _, case in ipairs(cases) do
   local ok, err = xpcall(function()
