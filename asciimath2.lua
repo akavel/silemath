@@ -930,7 +930,7 @@ local function AMparseIexpr(str)
 end
 
 function AMparseExpr(str, rightbracket)
-  local symbol, node, result, i
+  local symbol, node, result, i, newFrag
   newFrag = document:createDocumentFragment()
   repeat
     str = AMremoveCharsAndBlanks(str, 0)
