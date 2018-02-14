@@ -710,7 +710,8 @@ function AMparseSexpr(str)
     if i == nil then
       i = #str+1
     end
-    st = str:sub(2,i-1)
+    i = i-1
+    st = str:sub(2,i)
     if st:sub(1,1) == ' ' then
       node = createMmlNode('mspace')
       node:setAttribute('width', '1ex')
