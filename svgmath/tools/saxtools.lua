@@ -5,9 +5,9 @@ local math, string, table, require = math, string, table, require
 local pairs, ipairs = pairs, ipairs
 local _ENV = {package=package}
 if setfenv then setfenv(1, _ENV) end
-local PYLUA = require('PYLUA')
+local PYLUA = require('svgmath.PYLUA')
 
-local handler = require('xml.sax').handler
+local handler = require('svgmath.xml.sax').handler
 
 local function unicode(s)
   return s

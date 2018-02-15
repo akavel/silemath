@@ -5,16 +5,16 @@ local math, string, table, require = math, string, table, require
 local pairs, ipairs, tonumber, tostring, error = pairs, ipairs, tonumber, tostring, error
 local _ENV = {package=package}
 if setfenv then setfenv(1, _ENV) end
-local PYLUA = require('PYLUA')
+local PYLUA = require('svgmath.PYLUA')
 
 -- avoid circular require with contextmakers, see https://stackoverflow.com/a/13981857/98528
 package.loaded[...] = _ENV
 
-local contextmakers = require('contextmakers')
-local measurers = require('measurers')
-local generators = require('generators')
-local sax = require('xml').sax
-local NodeLocator = require('nodelocator').NodeLocator
+local contextmakers = require('svgmath.contextmakers')
+local measurers = require('svgmath.measurers')
+local generators = require('svgmath.generators')
+local sax = require('svgmath.xml').sax
+local NodeLocator = require('svgmath.nodelocator').NodeLocator
 
 isHighSurrogate = function(ch)
   -- Tests whether a Unicode character is from the high surrogates range

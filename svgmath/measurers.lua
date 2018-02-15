@@ -5,12 +5,12 @@ local math, string, table, require = math, string, table, require
 local pairs, ipairs = pairs, ipairs
 local _ENV = {package=package}
 if setfenv then setfenv(1, _ENV) end
-local PYLUA = require('PYLUA')
+local PYLUA = require('svgmath.PYLUA')
 
-local mathnode = require('mathnode')
-local operators = require('operators')
-local tables = require('tables')
-local enclosures = require('enclosures')
+local mathnode = require('svgmath.mathnode')
+local operators = require('svgmath.operators')
+local tables = require('svgmath.tables')
+local enclosures = require('svgmath.enclosures')
 
 -- Handy constant to draw fraction bars
 local defaultSlope = 1.383

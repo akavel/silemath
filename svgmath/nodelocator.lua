@@ -5,7 +5,7 @@ local math, string, table, io = math, string, table, io
 local pairs, ipairs, require = pairs, ipairs, require
 local _ENV = {package=package}
 if setfenv then setfenv(1, _ENV) end
-local PYLUA = require('PYLUA')
+local PYLUA = require('svgmath.PYLUA')
 
 NodeLocator = PYLUA.class() {
   -- Node locator for MathML parser.

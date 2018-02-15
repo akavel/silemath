@@ -5,12 +5,12 @@ local math, string, table = math, string, table
 local pairs, ipairs, require, error = pairs, ipairs, require, error
 local _ENV = {package=package}
 if setfenv then setfenv(1, _ENV) end
-local PYLUA = require('PYLUA')
+local PYLUA = require('svgmath.PYLUA')
 
-local sax = require('xml').sax
-local MathNode = require('mathnode').MathNode
-local MathConfig = require('mathconfig').MathConfig
-local NodeLocator = require('nodelocator').NodeLocator
+local sax = require('svgmath.xml').sax
+local MathNode = require('svgmath.mathnode').MathNode
+local MathConfig = require('svgmath.mathconfig').MathConfig
+local NodeLocator = require('svgmath.nodelocator').NodeLocator
 local MathNS = 'http://www.w3.org/1998/Math/MathML'
 
 MathHandler = PYLUA.class(sax.ContentHandler) {

@@ -1,8 +1,8 @@
 
-local PYLUA = require 'PYLUA'
+local PYLUA = require 'svgmath.PYLUA'
 
 local xml = {}
-xml.sax = require 'xml.sax'
+xml.sax = require 'svgmath.xml.sax'
 
 return xml
 

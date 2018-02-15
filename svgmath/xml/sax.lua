@@ -1,4 +1,4 @@
-local PYLUA = require 'PYLUA'
+local PYLUA = require 'svgmath.PYLUA'
 local lxp = require 'lxp'
 
 local sax = {}
@@ -99,13 +99,9 @@ function sax.make_parser()
       self.handler = adaptToLxp(handler)
     end,
     setFeature = function() end,
-    parse = function(self, file)
-      local all = file:read '*a'
-      if not all then
-        error(sax.SAXException("cannot read file contents: "..filename))
-      end
+    parse = function(self, document)
       local parser = lxp.new(self.handler, ' ')
-      local ok, msg, line, col, pos = parser:parse(all)
+      local ok, msg, line, col, pos = parser:parse(document)
       if ok == nil then
         error(sax.SAXException(string.format("%d:%d: %s", line, col, msg)))
       end

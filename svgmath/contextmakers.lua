@@ -9,13 +9,13 @@ local math, string, table, require = math, string, table, require
 local pairs, ipairs = pairs, ipairs
 local _ENV = {package=package}
 if setfenv then setfenv(1, _ENV) end
-local PYLUA = require('PYLUA')
+local PYLUA = require('svgmath.PYLUA')
 
 --[[
-local sys = require('sys')
+local sys = require('svgmath.sys')
 --]]
-local mathnode = require('mathnode')
-local operators = require('operators')
+local mathnode = require('svgmath.mathnode')
+local operators = require('svgmath.operators')
 
 default_context = function(node)
   -- Default context creator for a MathML tree node.

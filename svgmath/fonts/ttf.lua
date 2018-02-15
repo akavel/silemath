@@ -4,11 +4,11 @@ local math, string, table, arg = math, string, table, arg
 local pairs, ipairs, require, error = pairs, ipairs, require, error
 local _ENV = {package=package}
 if setfenv then setfenv(1, _ENV) end
-local PYLUA = require('PYLUA')
+local PYLUA = require('svgmath.PYLUA')
 
-local FontMetric = require('metric').FontMetric
-local CharMetric = require('metric').CharMetric
-local FontFormatError = require('metric').FontFormatError
+local FontMetric = require('svgmath.fonts.metric').FontMetric
+local CharMetric = require('svgmath.fonts.metric').CharMetric
+local FontFormatError = require('svgmath.fonts.metric').FontFormatError
 
 readUnsigned = function(ff, size)
   local res = 0

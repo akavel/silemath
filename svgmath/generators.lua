@@ -5,14 +5,14 @@ local math, string, table, require = math, string, table, require
 local pairs, ipairs = pairs, ipairs
 local _ENV = {package=package}
 if setfenv then setfenv(1, _ENV) end
-local PYLUA = require('PYLUA')
+local PYLUA = require('svgmath.PYLUA')
 
 --[[
-local sys = require('sys')
+local sys = require('svgmath.sys')
 --]]
-local mathnode = require('mathnode')
-local sax = require('xml').sax
-local xmlreader = require('xml.sax').xmlreader
+local mathnode = require('svgmath.mathnode')
+local sax = require('svgmath.xml').sax
+local xmlreader = require('svgmath.xml.sax').xmlreader
 
 -- SVG namespace
 local SVGNS = 'http://www.w3.org/2000/svg'

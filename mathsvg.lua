@@ -3,6 +3,7 @@
 SILE.debugFlags.silemath = 1
 
 local asciimath = require 'asciimath.asciimath'
+-- local svgmath = require 'svgmath.svgmath'
 local svg = require 'justenoughsvg'
 local pdf = require 'justenoughlibtexpdf'
 

@@ -5,13 +5,12 @@ local math, string, table, io, arg = math, string, table, io, arg
 local pairs, ipairs, require, pcall, xpcall, error = pairs, ipairs, require, pcall, xpcall, error
 local _ENV = {package=package}
 if setfenv then setfenv(1, _ENV) end
-local PYLUA = require('PYLUA')
+local PYLUA = require('svgmath.PYLUA')
 
-local os = require('os')
-local sax = require('xml').sax
-local AFMMetric = require('fonts.afm').AFMMetric
-local TTFMetric = require('fonts.ttf').TTFMetric
-local FontFormatError = require('fonts.metric').FontFormatError
+local sax = require('svgmath.xml').sax
+local AFMMetric = require('svgmath.fonts.afm').AFMMetric
+local TTFMetric = require('svgmath.fonts.ttf').TTFMetric
+local FontFormatError = require('svgmath.fonts.metric').FontFormatError
 local IOError = PYLUA.IOError
 
 MathConfig = PYLUA.class(sax.ContentHandler) {
@@ -38,8 +37,7 @@ MathConfig = PYLUA.class(sax.ContentHandler) {
     if not ok then
       local xcpt = ret
       if PYLUA.is_a(ret, sax.SAXException) then
-        PYLUA.print('Error parsing configuration file ', configfile, ': ', xcpt:getMessage(), '\n')
-        os.exit(1)
+        error('Error parsing configuration file ', configfile, ': ', xcpt:getMessage(), '\n')
       else
         error(ret)
       end

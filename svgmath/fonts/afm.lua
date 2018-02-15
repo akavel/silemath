@@ -4,12 +4,12 @@ local math, string, table, require = math, string, table, require
 local pairs, ipairs = pairs, ipairs
 local _ENV = {package=package}
 if setfenv then setfenv(1, _ENV) end
-local PYLUA = require('PYLUA')
+local PYLUA = require('svgmath.PYLUA')
 
-local glyphlist = require('glyphlist')
-local FontMetric = require('metric').FontMetric
-local CharMetric = require('metric').CharMetric
-local FontFormatError = require('metric').FontFormatError
+local glyphlist = require('svgmath.fonts.glyphlist')
+local FontMetric = require('svgmath.fonts.metric').FontMetric
+local CharMetric = require('svgmath.fonts.metric').CharMetric
+local FontFormatError = require('svgmath.fonts.metric').FontFormatError
 
 parseLength = function(s)
   return 0.001*float(s)

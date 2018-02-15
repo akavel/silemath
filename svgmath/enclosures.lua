@@ -5,9 +5,9 @@ local math, string, table, require = math, string, table, require
 local pairs, ipairs = pairs, ipairs
 local _ENV = {package=package}
 if setfenv then setfenv(1, _ENV) end
-local PYLUA = require('PYLUA')
+local PYLUA = require('svgmath.PYLUA')
 
-local mathnode = require('mathnode')
+local mathnode = require('svgmath.mathnode')
 
 addRadicalEnclosure = function(node)
   -- The below is full of heuristics

@@ -1,3 +1,4 @@
+return [[
 <config verbose="true">
   <fallback family="Times New Roman"/>
   <defaults displaystyle="false"
@@ -26,3 +27,4 @@
   <mathvariant name="italic" family="DejaVu Serif" style="italic"/>
   <mathvariant name="bold-italic" family="DejaVu Serif" weight="bold" style="italic"/>
 </config>
+]]
