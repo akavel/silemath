@@ -40,7 +40,7 @@ local function render(svg, matrices)
     pdf.setmatrix(svg.attrs.scale1, 0, 0, svg.attrs.scale2, 0, 0)
   end
   -- maybe render
-  if svg.name == 'text' then
+  if svg.name == 'text' and svg.childs then
     -- local dy = -font:getAscent()
     local text = svg.childs[1]
     pdf:gsave()
@@ -92,6 +92,19 @@ local function renderHbox(mathml)
   }
 end
 
+local function flattenSileContent(content)
+  -- based on SU.contentToString, but also try to "unescape" "SILE commands"
+  local string = ""
+  for i = 1, #content do
+    if type(content[i]) == "string" then
+      string = string .. content[i]
+    elseif type(content[i]) == "table" and content[i].id == "command" then
+      string = string .. (content[i].tag or '')
+    end
+  end
+  return string
+end
+
 SILE.registerCommand("mathsvg", function(options, content)
   local fn = SU.required(options, "src", "filename")
   local f = assert(io.open(fn))
@@ -101,15 +114,22 @@ SILE.registerCommand("mathsvg", function(options, content)
 end, "Render a SVG of a math equation that was produced by svgmath")
 
 SILE.registerCommand("asciimath", function(options, content)
-  -- TODO(akavel): is `content[1]` a proper approach to retrieving the content???
-  SU.debug('silemath', 'content='..content[1])
+  -- TODO(akavel): is below a proper approach to retrieving the content???
+  SU.debug('silemath', 'content='..content)
+  -- SU.debug('silemath', 'content[1]='..content[1])
+  -- SU.debug('silemath', 'contentToString='..SU.contentToString(content))
+  SU.debug('silemath', 'flattenSileContent='..flattenSileContent(content))
+  local content = flattenSileContent(content)
   -- Translate ASCIIMath to MathML
-  local xmlDoc = asciimath.parseMath(content[1])
+  local xmlDoc = asciimath.parseMath(content)
   while xmlDoc.tag~='mstyle' do
     xmlDoc = xmlDoc.childs[1]
   end
   local mathml = asciimath.toxml(xmlDoc.childs)
-  local mathml = '<math>'..mathml..'</math>'
+  -- local mathml = '<math display="block" xlmns="http://www.w3.org/1998/Math/MathML">' .. mathml .. '</math>'
+  -- local mathml = '<math>'..mathml..'</math>'
+  local doctype = '<!DOCTYPE math PUBLIC "-//W3C//DTD MathML 2.0//EN" "http://www.w3.org/TR/MathML2/dtd/mathml2.dtd">'
+  local mathml = doctype..'<math>'..mathml..'</math>'
   SU.debug('silemath', 'mathml='..mathml)
   -- Translate MathML to SVG
   local svgRaw = svgmath.mathml2svg(mathml)

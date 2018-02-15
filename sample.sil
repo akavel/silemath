@@ -5,13 +5,50 @@ Another line before.
 
 \script[src=mathsvg]
 
-\mathsvg[src=../silemath/sample/test13.out.svg]
+%\mathsvg[src=../silemath/sample/test13.out.svg]
 
 Sample final text.
-\mathsvg[src=../silemath/sample/test13.out.svg]
+
+%\mathsvg[src=../silemath/sample/test13.out.svg]
 
 Sample more more more text.
 
 \asciimath{E=mc^2}
+
+----
+
+Some examples from ASCIIMath homepage of Peter Jipsen:
+
+- complex subscripts are bracketed, displayed under lim
+
+. \asciimath{d/dxf(x)=lim_(h->0)(f(x+h)-f(x))/h}
+\bigskip
+
+- f^((n))(a) must be bracketed, else the numerator is only a
+
+. \asciimath{f(x)=sum_(n=0)^oo(f^((n))(a))/(n!)(x-a)^n}
+\bigskip
+
+% FIXME(akavel): error
+%- piecewise defined functions are based on matrix notation
+%
+%. \asciimath{x/x=\{(1,if x!=0),(text\{undefined\},if x=0):\}}
+%\bigskip
+
+% FIXME(akavel): error
+%- angle brackets and invisible brackets
+%
+%. \asciimath{<< a,b >> and \{:(x,y),(u,v):\}}
+%\bigskip
+
+- symbols can be stacked
+
+. \asciimath{stackrel"def"= or \\stackrel\{\\Delta\}\{=\}" "("or ":=)}
+\bigskip
+
+- prescripts simulated by subsuperscripts
+
+. \asciimath{\{::\}_(\\ 92)^238U}
+\bigskip
 
 \end{document}
