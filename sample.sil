@@ -10,4 +10,8 @@ Another line before.
 Sample final text.
 \mathsvg[src=../silemath/sample/test13.out.svg]
 
+Sample more more more text.
+
+\asciimath{E=mc^2}
+
 \end{document}

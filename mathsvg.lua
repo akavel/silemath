@@ -74,12 +74,7 @@ local function render(svg, matrices)
   end
 end
 
-SILE.registerCommand("mathsvg", function(options, content)
-  local fn = SU.required(options, "src", "filename")
-  local f = assert(io.open(fn))
-  local mathml = svg.parse(function() return f:read(1) end)
-  f:close()
-
+local function renderHbox(mathml)
   SILE.typesetter:pushHbox{
     -- TODO: process viewBox attribute from SVG (or width & height attributes) to build hbox size
     height=30, width=30, depth=0,
@@ -94,6 +89,19 @@ SILE.registerCommand("mathsvg", function(options, content)
       -- TODO: advance the pdf cursor as necessary
     end,
   }
+end
+
+SILE.registerCommand("mathsvg", function(options, content)
+  local fn = SU.required(options, "src", "filename")
+  local f = assert(io.open(fn))
+  local mathml = svg.parse(function() return f:read(1) end)
+  f:close()
+  renderHbox(mathml)
 end, "Render a SVG of a math equation that was produced by svgmath")
+
+SILE.registerCommand("asciimath", function(options, content)
+  -- TODO(akavel): is `content[1]` a proper approach to retrieving the content???
+  SU.debug('silemath', 'content='..content[1])
+end, "Render a math equation written using ASCIIMath markup language")
 
 
