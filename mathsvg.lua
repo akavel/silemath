@@ -109,7 +109,11 @@ SILE.registerCommand("asciimath", function(options, content)
     xmlDoc = xmlDoc.childs[1]
   end
   local mathml = asciimath.toxml(xmlDoc.childs)
+  local mathml = '<math>'..mathml..'</math>'
   SU.debug('silemath', 'mathml='..mathml)
+  -- Translate MathML to SVG
+  local svg = svgmath.mathml2svg(mathml)
+  SU.debug('silemath', 'svg='..svg)
 end, "Render a math equation written using ASCIIMath markup language")
 
 

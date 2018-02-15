@@ -1,5 +1,7 @@
 
 local setfenv, unpack = setfenv, (unpack or table.unpack)
+local setmetatable, require, xpcall, string = setmetatable, require, xpcall, string
+local error, table = error, table
 local PYLUA = require('svgmath.PYLUA')
 local sax = require('svgmath.xml').sax
 local XMLGenerator = require('svgmath.tools.saxtools').XMLGenerator
@@ -92,8 +94,7 @@ mathml2svg = function(source)
   if not ok then
     local xcpt = ret
     if PYLUA.is_a(ret, sax.SAXException) then
-      PYLUA.print(string.format('Error parsing input file: %s', xcpt:getMessage()), '\n')
-      exitcode = 1
+      error(string.format('Error parsing input file: %s', xcpt:getMessage()))
     else
       error(ret)
     end

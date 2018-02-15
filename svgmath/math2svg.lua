@@ -2,13 +2,13 @@
 -- 
 -- Replaces all instances of MathML throughout the document
 
-for _, subdir in ipairs{'.', 'tools', 'fonts'} do
-  package.path = package.path .. ';./svgmath/'..subdir..'/?.lua'
-end
+-- for _, subdir in ipairs{'.', 'tools', 'fonts'} do
+--   package.path = package.path .. ';./svgmath/'..subdir..'/?.lua'
+-- end
 
 local setfenv, unpack = setfenv, (unpack or table.unpack)
-local PYLUA = require('PYLUA')
-local sax = require('xml').sax
+local PYLUA = require('svgmath.PYLUA')
+local sax = require('svgmath.xml').sax
 local XMLGenerator = require('svgmath.tools.saxtools').XMLGenerator
 local ContentFilter = require('svgmath.tools.saxtools').ContentFilter
 local MathHandler = require('svgmath.mathhandler').MathHandler
@@ -23,6 +23,11 @@ open_or_die = function(fname, fmode, role)
   end
   return f
 end
+read_all = function(f)
+  local data = f:read '*a'
+  f:close()
+  return data
+end
 
 usage = function()
   io.stderr:write [[
@@ -34,7 +39,6 @@ Options:
     -s, --standalone         treat input as a standalone MathML document
     -i=FILE, --input=FILE    read MathML input from FILE instead of stdin
     -o=FILE, --output=FILE   write results to FILE instead of stdout
-    -c=FILE, --config=FILE   read configuration from FILE
     -e=ENC,  --encoding=ENC  produce output in ENC encoding
 ]]
 end
@@ -96,7 +100,6 @@ end
 main = function(...)
   local inputfile = io.stdin
   local outputfile = io.stdout
-  local configfile = nil
   local encoding = 'utf-8'
   local standalone = false
 
@@ -107,7 +110,6 @@ main = function(...)
     end
     inputfile, a = flag_get(inputfile, a, '-i', '--input')
     outputfile, a = flag_get(outputfile, a, '-o', '--output')
-    configfile, a = flag_get(configfile, a, '-c', '--config')
     encoding, a = flag_get(encoding, a, '-e', '--encoding')
     if a=='-s' or a=='--standalone' then
       standalone = true
@@ -120,6 +122,7 @@ main = function(...)
   if type(source)=='string' then
     source = open_or_die(source, 'rb', 'input')
   end
+  source = read_all(source)
 
   -- Determine output destination
   local output = outputfile
@@ -127,11 +130,8 @@ main = function(...)
     output = open_or_die(output, 'wb', 'output')
   end
 
-  -- Determine config file location
-  if not configfile then
-    configfile = PYLUA.dirname(arg[0]) .. 'svgmath.xml'
-  end
-  local config = open_or_die(configfile, 'rb', 'configuration')
+  -- TODO(akavel): dynamically generate config based on font
+  local config = require 'svgmath.config'
 
   -- Create the converter as a content handler. 
   local saxoutput = XMLGenerator(output, encoding)
@@ -158,7 +158,6 @@ main = function(...)
       error(ret)
     end
   end
-  source:close()
   if outputfile ~= nil then
     output:close()
   end

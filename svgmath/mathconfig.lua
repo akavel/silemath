@@ -1,6 +1,7 @@
 -- Configuration for MathML-to-SVG formatter.
 
 local setfenv, unpack = setfenv, (unpack or table.unpack)
+local tostring = tostring
 local math, string, table, io, arg = math, string, table, io, arg
 local pairs, ipairs, require, pcall, xpcall, error = pairs, ipairs, require, pcall, xpcall, error
 local _ENV = {package=package}
@@ -96,7 +97,8 @@ MathConfig = PYLUA.class(sax.ContentHandler) {
           io.stderr:write(string.format('Font entry for \'%s\' ignored\n', fontfullname))
           return 
         elseif PYLUA.is_a(err, IOError) then
-          local message = sys.exc_info()[2]
+          -- local message = sys.exc_info()[2]
+          local message = err
           io.stderr:write(string.format('I/O error reading font file \'%s\': %s\n', fontpath, tostring(message)))
           io.stderr:write(string.format('Font entry for \'%s\' ignored\n', fontfullname))
           return 

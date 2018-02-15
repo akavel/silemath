@@ -17,10 +17,10 @@ return [[
             framespacing="0.4em 0.5ex"/>
   <fallback family="DejaVu Serif"/>
   <family name="DejaVu Serif">
-    <font ttf="fonts/DejaVuSerif.ttf"/>
-    <font weight="bold" ttf="fonts/DejaVuSerif-Bold.ttf"/>
-    <font style="italic" ttf="fonts/DejaVuSerif-Italic.ttf"/>
-    <font weight="bold" style="italic" ttf="fonts/DejaVuSerif-BoldItalic.ttf"/>
+    <font ttf="c:\windows\fonts/DejaVuSerif.ttf"/>
+    <font weight="bold" ttf="c:\windows\fonts/DejaVuSerif-Bold.ttf"/>
+    <font style="italic" ttf="c:\windows\fonts/DejaVuSerif-Italic.ttf"/>
+    <font weight="bold" style="italic" ttf="c:\windows\fonts/DejaVuSerif-BoldItalic.ttf"/>
   </family>
   <mathvariant name="normal" family="DejaVu Serif"/>
   <mathvariant name="bold" family="DejaVu Serif" weight="bold"/>
