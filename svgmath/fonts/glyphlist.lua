@@ -2,6 +2,7 @@
 local setfenv, unpack = setfenv, (unpack or table.unpack)
 local math, string, table, arg = math, string, table, arg
 local pairs, ipairs, require, tonumber, error = pairs, ipairs, require, tonumber, error
+local setmetatable = setmetatable
 local _ENV = {package=package}
 if setfenv then setfenv(1, _ENV) end
 local PYLUA = require('svgmath.PYLUA')
@@ -45,8 +46,11 @@ GlyphList = PYLUA.class(dict) {
   ;
 }
 
-local glyphListName = PYLUA.dirname(arg[0]) .. 'svgmath/fonts/default.glyphs'
-defaultGlyphList = GlyphList(PYLUA.open(glyphListName, 'r'))
+local glyphListData = require 'svgmath.fonts.default_glyphs'
+local glyphListFile = setmetatable({}, {__index={
+  readline = string.gmatch(glyphListData, '[^\n\r]*')
+}})
+defaultGlyphList = GlyphList(glyphListFile)
 
 main = function()
   if #arg>0 then

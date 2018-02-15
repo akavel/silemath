@@ -1,3 +1,4 @@
+return [[
 # Name:          Adobe Glyph List
 # Table version: 2.0
 # Date:          September 20, 2002
@@ -4501,3 +4502,4 @@ a98;275C
 a99;275D
 a9;2720
 #-- end
+]]
