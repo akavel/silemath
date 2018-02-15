@@ -3,6 +3,7 @@
 SILE.debugFlags.silemath = 1
 
 local asciimath = require 'asciimath.asciimath'
+asciimath.init()
 local svgmath = require 'svgmath.svgmath'
 local svg = require 'justenoughsvg'
 local pdf = require 'justenoughlibtexpdf'
@@ -102,6 +103,13 @@ end, "Render a SVG of a math equation that was produced by svgmath")
 SILE.registerCommand("asciimath", function(options, content)
   -- TODO(akavel): is `content[1]` a proper approach to retrieving the content???
   SU.debug('silemath', 'content='..content[1])
+  -- Translate ASCIIMath to MathML
+  local xmlDoc = asciimath.parseMath(content[1])
+  while xmlDoc.tag~='mstyle' do
+    xmlDoc = xmlDoc.childs[1]
+  end
+  local mathml = asciimath.toxml(xmlDoc.childs)
+  SU.debug('silemath', 'mathml='..mathml)
 end, "Render a math equation written using ASCIIMath markup language")
 
 

@@ -85,6 +85,36 @@ local function charCodeAt(str, i)
   end
   return code
 end
+function asciimath.toxml(tabl, buf0)
+  local buf = buf0 or setmetatable({}, {__call = function(self, fmt, ...)
+    self[#self+1] = string.format(fmt, ...)
+  end})
+  local childs
+  if tabl.text then
+    buf('%s', tabl.text)
+    return tabl.text
+  elseif tabl.tag then
+    buf('<%s', tabl.tag)
+    local attrs = {}
+    for k,v in pairs(tabl.attrs or {}) do
+      attrs[#attrs+1] = string.format(' %s="%s"', k, v)
+    end
+    table.sort(attrs)
+    buf('%s>', table.concat(attrs, ''))
+    childs = tabl.childs
+  else
+    childs = tabl
+  end
+  for _, ch in ipairs(childs or {}) do
+    asciimath.toxml(ch, buf)
+  end
+  if tabl.tag then
+    buf('</%s>', tabl.tag)
+  end
+  if not buf0 then
+    return table.concat(buf, '')
+  end
+end
 local Tag = function(self, name)
   if name == 'childNodes' then
     return setmetatable({_childs = self.childs}, {
@@ -160,11 +190,11 @@ local Tag = function(self, name)
       if self._fragment then
         local t = {}
         for _,ch in ipairs(self.childs or {}) do
-          t[#t+1] = string.format("< %s >", toxml(ch))
+          t[#t+1] = string.format("< %s >", asciimath.toxml(ch))
         end
         return table.concat(t, '')
       end
-      return toxml(self)
+      return asciimath.toxml(self)
     end,
   }
   return funcs[name]
