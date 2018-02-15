@@ -130,6 +130,8 @@ SILE.registerCommand("asciimath", function(options, content)
   -- local mathml = '<math>'..mathml..'</math>'
   local doctype = '<!DOCTYPE math PUBLIC "-//W3C//DTD MathML 2.0//EN" "http://www.w3.org/TR/MathML2/dtd/mathml2.dtd">'
   local mathml = doctype..'<math>'..mathml..'</math>'
+  -- TODO(akavel): for "displaymath", use below variant (with `display="block"`):
+  -- local mathml = doctype..'<math display="block">'..mathml..'</math>'
   SU.debug('silemath', 'mathml='..mathml)
   -- Translate MathML to SVG
   local svgRaw = svgmath.mathml2svg(mathml)
