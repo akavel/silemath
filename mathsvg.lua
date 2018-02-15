@@ -112,8 +112,15 @@ SILE.registerCommand("asciimath", function(options, content)
   local mathml = '<math>'..mathml..'</math>'
   SU.debug('silemath', 'mathml='..mathml)
   -- Translate MathML to SVG
-  local svg = svgmath.mathml2svg(mathml)
-  SU.debug('silemath', 'svg='..svg)
+  local svgRaw = svgmath.mathml2svg(mathml)
+  SU.debug('silemath', 'svg='..svgRaw)
+  -- Render the SVG
+  local i = 0
+  local svgDoc = svg.parse(function()
+    i = i+1
+    return svgRaw:sub(i,i)
+  end)
+  renderHbox(svgDoc)
 end, "Render a math equation written using ASCIIMath markup language")
 
 
