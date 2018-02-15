@@ -4,9 +4,11 @@
 --    - context creators process the context of the current node;
 --    - child context setters alter the context of a child.
 
+local setfenv, unpack = setfenv, (unpack or table.unpack)
 local math, string, table, require = math, string, table, require
 local pairs, ipairs = pairs, ipairs
 local _ENV = {package=package}
+if setfenv then setfenv(1, _ENV) end
 local PYLUA = require('PYLUA')
 
 --[[
@@ -42,7 +44,7 @@ default_context = function(node)
     if defaultVariant == nil then
       error(sax.SAXException('Default mathvariant not defined in configuration file: configuration is unusable'))
     end
-    node.fontweight, node.fontstyle, node.fontfamilies = table.unpack(defaultVariant)
+    node.fontweight, node.fontstyle, node.fontfamilies = unpack(defaultVariant)
   end
   processFontAttributes(node)
   -- Set the rest of properties that need immediate initialization
@@ -199,7 +201,7 @@ processFontAttributes = function(node)
     if mathvariant == nil then
       node:error('Ignored mathvariant attribute: value \''+tostring(mathvariantattr)+'\' not defined in the font configuration file')
     else
-      node.fontweight, node.fontstyle, node.fontfamilies = table.unpack(mathvariant)
+      node.fontweight, node.fontstyle, node.fontfamilies = unpack(mathvariant)
     end
   else
     node.fontweight = node.attributes['fontweight'] or node.fontweight

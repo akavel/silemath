@@ -2,9 +2,11 @@
 -- 
 -- This module contains functions called from measurers.py to format tables.
 
+local setfenv, unpack = setfenv, (unpack or table.unpack)
 local math, string, table, require = math, string, table, require
 local pairs, ipairs, setmetatable = pairs, ipairs, setmetatable
 local _ENV = {package=package}
+if setfenv then setfenv(1, _ENV) end
 local PYLUA = require('PYLUA')
 
 local mathnode = require('mathnode')

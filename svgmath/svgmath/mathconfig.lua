@@ -1,8 +1,10 @@
 -- Configuration for MathML-to-SVG formatter.
 
+local setfenv, unpack = setfenv, (unpack or table.unpack)
 local math, string, table, io, arg = math, string, table, io, arg
 local pairs, ipairs, require, pcall, xpcall, error = pairs, ipairs, require, pcall, xpcall, error
 local _ENV = {package=package}
+if setfenv then setfenv(1, _ENV) end
 local PYLUA = require('PYLUA')
 
 local os = require('os')

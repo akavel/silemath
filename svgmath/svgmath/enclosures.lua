@@ -1,8 +1,10 @@
 -- Functions to format enclosures around MathML elements.
 
+local setfenv, unpack = setfenv, (unpack or table.unpack)
 local math, string, table, require = math, string, table, require
 local pairs, ipairs = pairs, ipairs
 local _ENV = {package=package}
+if setfenv then setfenv(1, _ENV) end
 local PYLUA = require('PYLUA')
 
 local mathnode = require('mathnode')

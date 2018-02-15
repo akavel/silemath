@@ -1,7 +1,9 @@
 
+local setfenv, unpack = setfenv, (unpack or table.unpack)
 local math, string, table, arg = math, string, table, arg
 local pairs, ipairs, require, error = pairs, ipairs, require, error
 local _ENV = {package=package}
+if setfenv then setfenv(1, _ENV) end
 local PYLUA = require('PYLUA')
 
 local FontMetric = require('metric').FontMetric
@@ -94,7 +96,7 @@ TTFMetric = PYLUA.class(FontMetric) {
         error(TTFFormatError('Required table '..tableTag..' missing in TrueType file'))
     end
 
-    local offset, length = table.unpack(switchTable('head'))
+    local offset, length = unpack(switchTable('head'))
     ff:seek(offset+12)
     local magic = readUnsigned(ff, 4)
     if magic~=0x5F0F3CF5 then
@@ -114,11 +116,11 @@ TTFMetric = PYLUA.class(FontMetric) {
     skip(ff, 6)
     self.indexToLocFormat = readSigned(ff, 2)
 
-    offset, length = table.unpack(switchTable('maxp'))
+    offset, length = unpack(switchTable('maxp'))
     ff:seek(offset+4)
     self.numGlyphs = readUnsigned(ff, 2)
 
-    offset, length = table.unpack(switchTable('name'))
+    offset, length = unpack(switchTable('name'))
     ff:seek(offset+2)
 
     local numRecords = readUnsigned(ff, 2)
@@ -149,12 +151,12 @@ TTFMetric = PYLUA.class(FontMetric) {
 
     local getName = function(code)
       if macNames[code] then
-        local nameOffset, nameLength = table.unpack(macNames[code])
+        local nameOffset, nameLength = unpack(macNames[code])
         ff:seek(storageOffset+nameOffset)
         return ff:read(nameLength)
         -- FIXME(grigoriev): repair Mac encoding here
       elseif uniNames[code] then
-        nameOffset, nameLength = table.unpack(uniNames[code])
+        nameOffset, nameLength = unpack(uniNames[code])
         ff:seek(storageOffset+nameOffset)
         local result = ''
         for i = 1,nameLength/2 do
@@ -168,7 +170,7 @@ TTFMetric = PYLUA.class(FontMetric) {
     self.fullname = getName(4)
     self.fontname = getName(6)
 
-    offset, length = table.unpack(switchTable('OS/2'))
+    offset, length = unpack(switchTable('OS/2'))
     ff:seek(offset)
     local tableVersion = readUnsigned(ff, 2)
     local cw = readSigned(ff, 2)
@@ -213,17 +215,17 @@ TTFMetric = PYLUA.class(FontMetric) {
       end
     end
 
-    offset, length = table.unpack(switchTable('post'))
+    offset, length = unpack(switchTable('post'))
     ff:seek(offset+4)
     self.italicangle = readFixed32(ff)
     self.underlineposition = readSigned(ff, 2)*emScale
     self.underlinethickness = readSigned(ff, 2)*emScale
 
-    offset, length = table.unpack(switchTable('hhea'))
+    offset, length = unpack(switchTable('hhea'))
     ff:seek(offset+34)
     local numHmtx = readUnsigned(ff, 2)
 
-    offset, length = table.unpack(switchTable('hmtx'))
+    offset, length = unpack(switchTable('hmtx'))
     ff:seek(offset)
     local glyphArray = {}
     local w = 0
@@ -235,7 +237,7 @@ TTFMetric = PYLUA.class(FontMetric) {
       table.insert(glyphArray, CharMetric(PYLUA.keywords{width=w}))
     end
 
-    offset, length = table.unpack(switchTable('cmap'))
+    offset, length = unpack(switchTable('cmap'))
     ff:seek(offset+2)
     local subtableOffset = 0
     numTables = readUnsigned(ff, 2)
@@ -334,7 +336,7 @@ TTFMetric = PYLUA.class(FontMetric) {
       end
     end
 
-    offset, length = table.unpack(switchTable('loca'))
+    offset, length = unpack(switchTable('loca'))
     ff:seek(offset)
     local glyphIndex = {}
     local scalefactor = self.indexToLocFormat+1
@@ -351,7 +353,7 @@ TTFMetric = PYLUA.class(FontMetric) {
       error(TTFFormatError(string.format('Invalid indexToLocFormat value (%d) in \'head\' table', tostring(self.indexToLocFormat))))
     end
 
-    offset, length = table.unpack(switchTable('glyf'))
+    offset, length = unpack(switchTable('glyf'))
     for i = 1,self.numGlyphs do
       local cm = glyphArray[i]
       if glyphIndex[i]==glyphIndex[i+1] then

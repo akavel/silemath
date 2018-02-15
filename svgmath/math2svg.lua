@@ -6,6 +6,7 @@ for _, subdir in ipairs{'.', 'tools', 'fonts'} do
   package.path = package.path .. ';./svgmath/'..subdir..'/?.lua'
 end
 
+local setfenv, unpack = setfenv, (unpack or table.unpack)
 local PYLUA = require('PYLUA')
 local sax = require('xml').sax
 local XMLGenerator = require('svgmath.tools.saxtools').XMLGenerator
@@ -57,7 +58,7 @@ MathFilter = PYLUA.class(ContentFilter) {
 
   startElementNS = function(self, elementName, qName, attrs)
     if self.depth==0 then
-      local namespace, localName = table.unpack(elementName)
+      local namespace, localName = unpack(elementName)
       if namespace==MathNS then
         self.output = self.mathOutput
         self.depth = 1

@@ -1,7 +1,9 @@
 
+local setfenv, unpack = setfenv, (unpack or table.unpack)
 local math, string, table, arg = math, string, table, arg
 local pairs, ipairs, require, tonumber, error = pairs, ipairs, require, tonumber, error
 local _ENV = {package=package}
+if setfenv then setfenv(1, _ENV) end
 local PYLUA = require('PYLUA')
 
 local os = require('os')

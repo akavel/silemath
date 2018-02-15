@@ -1,8 +1,10 @@
 -- Main structure class for MathML formatting.
 
+local setfenv, unpack = setfenv, (unpack or table.unpack)
 local math, string, table, require = math, string, table, require
 local pairs, ipairs, tonumber, tostring, error = pairs, ipairs, tonumber, tostring, error
 local _ENV = {package=package}
+if setfenv then setfenv(1, _ENV) end
 local PYLUA = require('PYLUA')
 
 -- avoid circular require with contextmakers, see https://stackoverflow.com/a/13981857/98528
@@ -491,7 +493,7 @@ MathNode = PYLUA.class() {
       if chardesc == nil then
         self.width = self.width+self:metric().missingGlyph.width
       else
-        cm, fd = table.unpack(chardesc)
+        cm, fd = unpack(chardesc)
         fd.used = true
         if chcode==ucstext[1] then
           cm0 = cm

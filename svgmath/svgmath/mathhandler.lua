@@ -1,8 +1,10 @@
 -- SAX filter for MathML-to-SVG conversion.
 
+local setfenv, unpack = setfenv, (unpack or table.unpack)
 local math, string, table = math, string, table
 local pairs, ipairs, require, error = pairs, ipairs, require, error
 local _ENV = {package=package}
+if setfenv then setfenv(1, _ENV) end
 local PYLUA = require('PYLUA')
 
 local sax = require('xml').sax
@@ -48,7 +50,7 @@ MathHandler = PYLUA.class(sax.ContentHandler) {
       return 
     end
     local locator = NodeLocator(self.locator)
-    local namespace, localName = table.unpack(elementName)
+    local namespace, localName = unpack(elementName)
     if namespace and namespace~=MathNS then
       if self.config.verbose then
         locator:message(string.format('Skipped element \'%s\' from an unknown namespace \'%s\'', localName, namespace), 'INFO')
@@ -58,7 +60,7 @@ MathHandler = PYLUA.class(sax.ContentHandler) {
     end
     local properties = { }
     for attName, value in pairs(attributes) do
-      local attNamespace, attLocalName = table.unpack(attName)
+      local attNamespace, attLocalName = unpack(attName)
       if attNamespace and attNamespace~=MathNS then
         if self.config.verbose then
           locator:message(string.format('Ignored attribute \'%s\' from an unknown namespace \'%s\'', attLocalName, attNamespace), 'INFO')
@@ -79,7 +81,7 @@ MathHandler = PYLUA.class(sax.ContentHandler) {
         return 
       end
     end
-    local namespace, localname = table.unpack(elementName)
+    local namespace, localname = unpack(elementName)
     if namespace and namespace~=MathNS then
       error(sax.SAXParseException('SAX parser error: namespace on opening and closing elements don\'t match', nil, self.locator))
     end

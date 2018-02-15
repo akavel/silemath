@@ -1,8 +1,10 @@
 -- Functions to determine size and position of MathML elements
 
+local setfenv, unpack = setfenv, (unpack or table.unpack)
 local math, string, table, require = math, string, table, require
 local pairs, ipairs = pairs, ipairs
 local _ENV = {package=package}
+if setfenv then setfenv(1, _ENV) end
 local PYLUA = require('PYLUA')
 
 local mathnode = require('mathnode')
@@ -286,7 +288,7 @@ measure_mrow = function(node)
   end
 
   -- Calculate extent for vertical stretching
-  node.ascender, node.descender = table.unpack(getVerticalStretchExtent(node.children, node.alignToAxis, node:axis()))
+  node.ascender, node.descender = unpack(getVerticalStretchExtent(node.children, node.alignToAxis, node:axis()))
 
   -- Grow sizeable operators 
   for _, ch in ipairs(node.children) do
@@ -304,7 +306,7 @@ measure_mrow = function(node)
   end
 
   -- Recalculate height/depth after growing operators
-  node.height, node.depth, node.ascender, node.descender = table.unpack(getRowVerticalExtent(node.children, node.alignToAxis, node:axis()))
+  node.height, node.depth, node.ascender, node.descender = unpack(getRowVerticalExtent(node.children, node.alignToAxis, node:axis()))
 
   -- Finally, calculate width and spacings
   for _, ch in ipairs(node.children) do
@@ -324,7 +326,7 @@ measure_mfrac = function(node)
     end
   end
 
-  node.enumerator, node.denominator = table.unpack(PYLUA.slice(node.children, nil, 2))
+  node.enumerator, node.denominator = unpack(PYLUA.slice(node.children, nil, 2))
   node.alignToAxis = true
 
   local ruleWidthKeywords = { medium='1', thin='0.5', thick='2' }
@@ -696,7 +698,7 @@ measure_mtable = function(node)
   vsize = vsize+2*node.framespacings[2]
 
   -- Calculate alignment point
-  local alignType, alignRow = table.unpack(tables.getAlign(node))
+  local alignType, alignRow = unpack(tables.getAlign(node))
 
   local topLine = 0
   local bottomLine = vsize
@@ -784,15 +786,15 @@ measureScripts = function(node, subscripts, superscripts, presubscripts, presupe
 
   local subs = PYLUA.update(PYLUA.copy(node.subscripts), node.presubscripts)
   local supers = PYLUA.update(PYLUA.copy(node.superscripts), node.presuperscripts)
-  node.subscriptAxis = math.max(0, table.unpack(PYLUA.collect(subs, function(x) return x:axis() end)))
-  node.superscriptAxis = math.max(0, table.unpack(PYLUA.collect(supers, function(x) return x:axis() end)))
+  node.subscriptAxis = math.max(0, unpack(PYLUA.collect(subs, function(x) return x:axis() end)))
+  node.superscriptAxis = math.max(0, unpack(PYLUA.collect(supers, function(x) return x:axis() end)))
   local _subs_supers = PYLUA.update(PYLUA.copy(subs), supers)
-  local gap = math.max(table.unpack(PYLUA.collect(_subs_supers, function(x) return x:nominalLineGap() end)))
+  local gap = math.max(unpack(PYLUA.collect(_subs_supers, function(x) return x:nominalLineGap() end)))
   local protrusion = node:parseLength('0.25ex')
   local scriptMedian = node:axis()
 
-  local subHeight, subDepth, subAscender, subDescender = table.unpack(getRowVerticalExtent(subs, false, node.subscriptAxis))
-  local superHeight, superDepth, superAscender, superDescender = table.unpack(getRowVerticalExtent(supers, false, node.superscriptAxis))
+  local subHeight, subDepth, subAscender, subDescender = unpack(getRowVerticalExtent(subs, false, node.subscriptAxis))
+  local superHeight, superDepth, superAscender, superDescender = unpack(getRowVerticalExtent(supers, false, node.superscriptAxis))
 
   node.subShift = 0
   if #subs>0 then

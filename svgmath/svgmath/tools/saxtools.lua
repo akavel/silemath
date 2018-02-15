@@ -1,8 +1,10 @@
 -- Miscellaneous SAX-related utilities used in SVGMath
 
+local setfenv, unpack = setfenv, (unpack or table.unpack)
 local math, string, table, require = math, string, table, require
 local pairs, ipairs = pairs, ipairs
 local _ENV = {package=package}
+if setfenv then setfenv(1, _ENV) end
 local PYLUA = require('PYLUA')
 
 local handler = require('xml.sax').handler
@@ -149,7 +151,7 @@ XMLGenerator = PYLUA.class(handler.ContentHandler) {
       qattrs[self:_qname(attname)] = attvalue
     end
     for _, PYLUA_x in ipairs(self._undeclared_ns_maps) do
-      local prefix, uri = table.unpack(PYLUA_x)
+      local prefix, uri = unpack(PYLUA_x)
       if prefix then
         qattrs[string.format('xmlns:%s', unicode(prefix))] = uri
       else

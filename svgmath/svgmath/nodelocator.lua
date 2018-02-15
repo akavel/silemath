@@ -1,8 +1,10 @@
 -- Node locator for MathML parser.
 
+local setfenv, unpack = setfenv, (unpack or table.unpack)
 local math, string, table, io = math, string, table, io
 local pairs, ipairs, require = pairs, ipairs, require
 local _ENV = {package=package}
+if setfenv then setfenv(1, _ENV) end
 local PYLUA = require('PYLUA')
 
 NodeLocator = PYLUA.class() {

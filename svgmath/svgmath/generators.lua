@@ -1,8 +1,10 @@
 -- Drawing methods for MathML elements
 
+local setfenv, unpack = setfenv, (unpack or table.unpack)
 local math, string, table, require = math, string, table, require
 local pairs, ipairs = pairs, ipairs
 local _ENV = {package=package}
+if setfenv then setfenv(1, _ENV) end
 local PYLUA = require('PYLUA')
 
 --[[
@@ -730,7 +732,7 @@ drawBordersEnclosure = function(node, output)
   local x2 = node.width-node.borderWidth/2
   local y2 = node.depth-node.borderWidth/2
 
-  local left, right, top, bottom = table.unpack(node.decorationData)
+  local left, right, top, bottom = unpack(node.decorationData)
   if left then
     drawBorder(x1, y1, x1, y2)
   end
@@ -765,7 +767,7 @@ drawStrikesEnclosure = function(node, output)
   local mid_x = node.width/2
   local mid_y = (node.depth-node.height)/2
 
-  local horiz, vert, updiag, downdiag = table.unpack(node.decorationData)
+  local horiz, vert, updiag, downdiag = unpack(node.decorationData)
   if horiz then
     drawStrike(0, mid_y, node.width, mid_y)
   end

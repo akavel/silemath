@@ -1,7 +1,9 @@
 
+local setfenv, unpack = setfenv, (unpack or table.unpack)
 local math, string, table, require = math, string, table, require
 local pairs, ipairs = pairs, ipairs
 local _ENV = {package=package}
+if setfenv then setfenv(1, _ENV) end
 local PYLUA = require('PYLUA')
 
 
@@ -194,7 +196,7 @@ FontMetric = PYLUA.class() {
     local chars = PYLUA.items(self.chardata)
     PYLUA.sort(chars, PYLUA.keywords{key=function(c) return c[1] end})
     for _, PYLUA_x in ipairs(chars) do
-      local i, cm = table.unpack(PYLUA_x)
+      local i, cm = unpack(PYLUA_x)
       if cm == nil then
         goto continue
       end
