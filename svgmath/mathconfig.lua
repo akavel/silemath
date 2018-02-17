@@ -1,6 +1,7 @@
 -- Configuration for MathML-to-SVG formatter.
 
 local setfenv, unpack = setfenv, (unpack or table.unpack)
+local SILE = SILE
 local tostring = tostring
 local math, string, table, io, arg = math, string, table, io, arg
 local pairs, ipairs, require, pcall, xpcall, error = pairs, ipairs, require, pcall, xpcall, error
@@ -23,6 +24,7 @@ MathConfig = PYLUA.class(sax.ContentHandler) {
     self.verbose = false
     self.debug = {}
     self.currentFamily = nil
+    self.rawFamily = nil
     self.fonts = { }
     self.variants = { }
     self.defaults = { }
@@ -59,8 +61,8 @@ MathConfig = PYLUA.class(sax.ContentHandler) {
       self.fallbackFamilies = PYLUA.collect(PYLUA.split(familyattr, ','), function(x) return string.gsub(x, '%s+', ' ') end)
 
     elseif name=='family' then
-      self.currentFamily = attributes['name'] or ''
-      self.currentFamily = string.gsub(PYLUA.lower(self.currentFamily), '%s+', '')
+      self.rawFamily = attributes['name'] or ''
+      self.currentFamily = string.gsub(PYLUA.lower(self.rawFamily), '%s+', '')
 
     elseif name=='font' then
       local weight = attributes['weight'] or 'normal'
@@ -79,6 +81,10 @@ MathConfig = PYLUA.class(sax.ContentHandler) {
           metric = AFMMetric(fontpath, attributes['glyph-list'], io.stderr)
         elseif attributes['ttf'] then
           local fontpath = attributes['ttf']
+          if SILE then
+            local fontoptions = { family=self.rawFamily, style=style }
+            fontpath = SILE.font.cache(fontoptions,SILE.shaper.getFace).filename
+          end
           metric = TTFMetric(fontpath, io.stderr)
         else
           io.stderr:write('Bad record in configuration file: font is neither AFM nor TTF\n')
@@ -134,6 +140,7 @@ MathConfig = PYLUA.class(sax.ContentHandler) {
   endElement = function(self, name)
     if name=='family' then
       self.currentFamily = nil
+      self.rawFamily = nil
     end
   end
   ;
