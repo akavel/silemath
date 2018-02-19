@@ -17,7 +17,7 @@ local function renderGlyph(glyph, x, y, fontoptions)
   -- FIXME: below block feels overcomplicated and probably against the flow; can it be simplified?
   local shape = SILE.shaper:shapeToken(glyph, fontoptions)
   shape[1].width = 0
-  shape[1].x_offset = x
+  shape[1].x_offset = x - shape[1].glyphAdvance/2
   shape[1].y_offset = y
   -- FIXME: below 'dummy' triggers correct branch in libtexpdf-output's outputHbox
   SILE.outputters.libtexpdf.outputHbox{
@@ -44,7 +44,6 @@ local function render(svg, matrices)
     -- local dy = -font:getAscent()
     local text = svg.childs[1]
     pdf:gsave()
-    -- FIXME: glyph should be centered horizontally at svg.attrs.x
     pdf.setmatrix(1,0,0,1, svg.attrs.x, -svg.attrs.y)
     renderGlyph(text, 0, 0, {
       family = svg.attrs.font_family,
