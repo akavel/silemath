@@ -8,17 +8,29 @@ local svgmath = require 'svgmath.svgmath'
 local svg = require 'justenoughsvg'
 local pdf = require 'justenoughlibtexpdf'
 
-local function renderGlyph(glyph, x, y, fontoptions)
+local function renderText(text, x, y, fontoptions)
   -- below 2 lines load raw font from cache (or disk if not cached); first
   -- occurrence results in 'Resolved font ...' message
   local fontoptions = SILE.font.loadDefaults(fontoptions)
   -- TODO: [LATER] use 'current outputter' (SILE.outputter.outputHbox) instead of explicit libtexpdf?
   SILE.outputters.libtexpdf.setFont(fontoptions)
   -- FIXME: below block feels overcomplicated and probably against the flow; can it be simplified?
-  local shape = SILE.shaper:shapeToken(glyph, fontoptions)
-  shape[1].width = 0
-  shape[1].x_offset = x - shape[1].glyphAdvance/2
-  shape[1].y_offset = y
+  local shape = SILE.shaper:shapeToken(text, fontoptions)
+  -- center the text horizontally, and reset width to 0, so that libtexpdf doesn't try to interpret it
+  local width = 0
+  for _, glyph in ipairs(shape) do
+    width = width + glyph.glyphAdvance
+  end
+  local x = x-width/2
+  for _, glyph in ipairs(shape) do
+    glyph.width = 0
+    glyph.x_offset = x
+    glyph.y_offset = y
+    x = x + glyph.glyphAdvance
+  end
+  -- shape[1].width = 0
+  -- shape[1].x_offset = x - shape[1].glyphAdvance/2
+  -- shape[1].y_offset = y
   -- FIXME: below 'dummy' triggers correct branch in libtexpdf-output's outputHbox
   SILE.outputters.libtexpdf.outputHbox{
     complex=true,
@@ -45,7 +57,7 @@ local function render(svg, matrices)
     local text = svg.childs[1]
     pdf:gsave()
     pdf.setmatrix(1,0,0,1, svg.attrs.x, -svg.attrs.y)
-    renderGlyph(text, 0, 0, {
+    renderText(text, 0, 0, {
       family = svg.attrs.font_family,
       style = svg.attrs.font_style or '',
       size = svg.attrs.font_size,
