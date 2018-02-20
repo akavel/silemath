@@ -90,7 +90,8 @@ local function renderHbox(mathml)
   SILE.typesetter:pushHbox{
     -- TODO: process viewBox attribute from SVG (or width & height attributes) to build hbox size
     height=30, width=30, depth=0,
-    outputYourself = function(self, typesetter)
+    outputYourself = function(self, typesetter, line)
+      SILE.outputter.debugHbox(self, self:scaledWidth(line))
       local oldx, oldy = SILE.outputters.libtexpdf.cursor()
       SILE.outputters.libtexpdf.moveTo(0,0)
       pdf:gsave()
@@ -99,6 +100,7 @@ local function renderHbox(mathml)
       pdf:grestore()
       SILE.outputters.libtexpdf.moveTo(oldx, oldy)
       -- TODO: advance the pdf cursor as necessary
+      -- TODO: typesetter.frame:advanceWritingPosition(this.width) -- do we need this? see SILE.pdf 8.1.1
     end,
   }
 end

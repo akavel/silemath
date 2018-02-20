@@ -1,9 +1,13 @@
 \begin{document}
+
+\script[src=mathsvg]
+
 Sample inital text.
+
+Now will come inline attempt at equation \asciimath{E=mc^2}. Then we are after the inline attempt.
 
 Another line before.
 
-\script[src=mathsvg]
 
 %\mathsvg[src=../silemath/sample/test13.out.svg]
 
@@ -13,7 +17,7 @@ Sample final text.
 
 Sample more more more text.
 
-\asciimath{E=mc^2}
+%\asciimath{E=mc^2}
 
 ----
 
